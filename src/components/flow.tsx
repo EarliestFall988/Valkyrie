@@ -12,6 +12,8 @@ import {
   SelectionMode,
 } from "reactflow";
 
+import * as ContextMenu from "@radix-ui/react-context-menu";
+
 const initialNodes: Node[] = [
   {
     id: "1",
@@ -37,7 +39,7 @@ const initialEdges: Edge[] = [
   { id: "2-3", source: "2", target: "3", type: "smoothstep" },
 ];
 
-const panOnDrag = [1, 2];
+const panOnDrag = [1];
 
 export const Flow = () => {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
@@ -58,33 +60,60 @@ export const Flow = () => {
   );
 
   return (
-    <div style={{ height: "100%" }}>
-      <ReactFlow
-        nodes={nodes}
-        onNodesChange={onNodesChange}
-        edges={edges}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        panOnScroll
-        selectionOnDrag
-        panOnDrag={panOnDrag}
-        selectionMode={SelectionMode.Partial}
-      >
-        <Background
-          id="1"
-          gap={10}
-          color="#111"
-          variant={BackgroundVariant.Lines}
-        />
-        <Background
-          id="2"
-          gap={100}
-          offset={1}
-          color="#222"
-          variant={BackgroundVariant.Lines}
-        />
-        <Controls />
-      </ReactFlow>
-    </div>
+    <ContextMenu.Root>
+      <ContextMenu.Trigger>
+        <div style={{ height: "100%" }}>
+          <ReactFlow
+            nodes={nodes}
+            onNodesChange={onNodesChange}
+            edges={edges}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            panOnScroll
+            panOnDrag={panOnDrag}
+            selectionMode={SelectionMode.Partial}
+          >
+            <Background
+              id="1"
+              gap={10}
+              color="#111"
+              variant={BackgroundVariant.Lines}
+            />
+            <Background
+              id="2"
+              gap={100}
+              offset={1}
+              color="#222"
+              variant={BackgroundVariant.Lines}
+            />
+            <Controls />
+          </ReactFlow>
+        </div>
+      </ContextMenu.Trigger>
+      <ContextMenu.Content className="rounded bg-neutral-800 p-2">
+        <ContextMenu.Item>Edit</ContextMenu.Item>
+        <ContextMenu.Item>Duplicate</ContextMenu.Item>
+        <ContextMenu.Separator />
+        <ContextMenu.Item>Archive</ContextMenu.Item>
+
+        <ContextMenu.Sub>
+          <ContextMenu.SubTrigger>More</ContextMenu.SubTrigger>
+          <ContextMenu.SubContent>
+            <ContextMenu.Item>Move to project…</ContextMenu.Item>
+            <ContextMenu.Item>Move to folder…</ContextMenu.Item>
+            <ContextMenu.Separator />
+            <ContextMenu.Item>Advanced options…</ContextMenu.Item>
+          </ContextMenu.SubContent>
+        </ContextMenu.Sub>
+
+        <ContextMenu.Separator />
+        <ContextMenu.Item>Share</ContextMenu.Item>
+        <ContextMenu.Item>Add to favorites</ContextMenu.Item>
+        <ContextMenu.Separator />
+        <ContextMenu.Item shortcut="⌘ ⌫" color="red">
+          Delete
+        </ContextMenu.Item>
+      </ContextMenu.Content>
+    </ContextMenu.Root>
   );
 };

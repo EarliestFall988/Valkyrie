@@ -1,5 +1,4 @@
 import {
-  CommandLineIcon,
   CpuChipIcon,
   ExclamationTriangleIcon,
   PlusIcon,
@@ -88,10 +87,10 @@ const Dashboard: NextPage = () => {
         <div className="h-[8vh]" />
         <div className="flex w-full flex-col gap-2 rounded-lg p-2 md:m-auto md:w-1/2">
           <div className="flex items-center justify-between gap-5">
-            <h3 className="text-3xl font-semibold">Bots</h3>
+            <h3 className="select-none text-3xl font-semibold">Bots</h3>
             <div className="flex items-center justify-center gap-2">
               <Link href="/jobs/new">
-                <div className="flex items-center justify-center gap-2 rounded border border-transparent p-2 transition duration-200 hover:cursor-pointer hover:border-purple-500 hover:text-purple-500">
+                <div className="flex select-none items-center justify-center gap-2 rounded border border-transparent p-2 transition duration-200 hover:cursor-pointer hover:border-purple-500 hover:text-purple-500">
                   <p>Add</p>
                   <PlusIcon className="h-6 w-6" />
                 </div>
@@ -108,7 +107,7 @@ const Dashboard: NextPage = () => {
                 }}
               >
                 <div
-                  className={`flex items-center justify-center gap-2 rounded border border-transparent p-2 transition duration-200 ${
+                  className={`flex select-none items-center justify-center gap-2 rounded border border-transparent p-2 transition duration-200 ${
                     canDelete
                       ? "border-red-600 text-red-700 hover:border-red-500 hover:text-red-500"
                       : "hover:border-purple-500 hover:text-purple-500"
@@ -120,7 +119,7 @@ const Dashboard: NextPage = () => {
               </button>
               {canDelete && (
                 <button onClick={ToggleCanDelete}>
-                  <div className="flex items-center justify-center gap-2 rounded border border-transparent p-2 transition duration-200 hover:cursor-pointer hover:border-purple-500 hover:text-purple-500">
+                  <div className="flex select-none items-center justify-center gap-2 rounded border border-transparent p-2 transition duration-200 hover:cursor-pointer hover:border-purple-500 hover:text-purple-500">
                     <XMarkIcon className="h-6 w-6" />
                   </div>
                 </button>
@@ -190,7 +189,10 @@ const JobCard: React.FC<{
   };
 
   return (
-    <div className="flex h-56 items-start justify-between rounded-lg border border-neutral-900 p-4 transition duration-200 hover:border-neutral-800">
+    <Link
+      href={`/jobs/${job.id}`}
+      className="flex h-56 select-none items-start justify-between rounded-lg border border-neutral-900 p-4 transition duration-200 hover:border-neutral-800"
+    >
       {isDeleting && markedForDeletion ? (
         <div className="flex h-full w-full items-center justify-center">
           <Loading />
@@ -205,7 +207,13 @@ const JobCard: React.FC<{
             <p className="text-neutral-400">{job.description}</p>
           </div>
           {showDeletion && (
-            <button onClick={ToggleMarkedForDeletion}>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                ToggleMarkedForDeletion();
+              }}
+            >
               <TrashIcon
                 className={`h-6 w-6 transition duration-200  ${
                   markedForDeletion
@@ -217,7 +225,7 @@ const JobCard: React.FC<{
           )}
         </>
       )}
-    </div>
+    </Link>
   );
 };
 
