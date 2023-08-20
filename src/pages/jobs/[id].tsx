@@ -32,6 +32,7 @@ const JobPage: NextPage = () => {
   return (
     <div className="h-[100vh] w-full">
       <Ribbon job={job} errorLoading={isError} loading={isLoading} />
+      <KeyBindings />
       <Flow />
     </div>
   );
@@ -73,6 +74,20 @@ const Ribbon: React.FC<{
           )}
         </>
       )}
+    </div>
+  );
+};
+
+const KeyBindings = () => {
+  return (
+    <div className="fixed bottom-0 z-20 flex w-full items-center justify-center gap-4 p-2">
+      <p className="rounded bg-neutral-900 p-1">Left Mouse Button: Select</p>
+      <p className="rounded bg-neutral-900 p-1">
+        CTRL (or CMD on Mac) + Scroll Wheel: Select
+      </p>
+      <p className="rounded bg-neutral-900 p-1">
+        Middle Mouse Button: Pan
+      </p>
     </div>
   );
 };

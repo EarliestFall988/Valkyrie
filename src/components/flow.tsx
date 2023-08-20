@@ -9,9 +9,10 @@ import {
   Background,
   BackgroundVariant,
   Controls,
+  SelectionMode,
 } from "reactflow";
 
-const initialNodes = [
+const initialNodes: Node[] = [
   {
     id: "1",
     data: { label: "Hello" },
@@ -23,11 +24,20 @@ const initialNodes = [
     data: { label: "World" },
     position: { x: 100, y: 100 },
   },
+  {
+    id: "3",
+    data: { label: "Hi Mom" },
+    position: { x: 200, y: 200 },
+    type: "output",
+  },
 ];
 
-const initialEdges = [
-  { id: "1-2", source: "1", target: "2", label: "to the", type: "step" },
+const initialEdges: Edge[] = [
+  { id: "1-2", source: "1", target: "2", label: "to the", type: "smoothstep" },
+  { id: "2-3", source: "2", target: "3", type: "smoothstep" },
 ];
+
+const panOnDrag = [1, 2];
 
 export const Flow = () => {
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
@@ -55,6 +65,10 @@ export const Flow = () => {
         edges={edges}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        panOnScroll
+        selectionOnDrag
+        panOnDrag={panOnDrag}
+        selectionMode={SelectionMode.Partial}
       >
         <Background
           id="1"
