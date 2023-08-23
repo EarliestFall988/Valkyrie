@@ -26,4 +26,59 @@ model Job {
     description String? @db.VarChar(255)
     ui_data     String  @db.Text()
     data        String  @db.Text()
+
+    customFunctions CustomFunction[]
+    variables       Variables[]
+}
+
+model Variables {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name        String  @db.VarChar(255)
+    description String? @db.VarChar(255)
+    type        String  @db.VarChar(255)
+    required    Boolean @default(false)
+    default     String? @db.VarChar(255)
+
+    jobId String
+
+    job Job @relation(fields: [jobId], references: [id])
+
+    @@index([jobId], name: "jobId")
+}
+
+model CustomFunction {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name        String       @db.VarChar(255)
+    description String?      @db.VarChar(255)
+    parameters  Parameters[]
+
+    jobId String
+
+    job Job @relation(fields: [jobId], references: [id])
+
+    @@index([jobId], name: "jobId")
+}
+
+model Parameters {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name        String  @db.VarChar(255)
+    description String? @db.VarChar(255)
+    type        String  @db.VarChar(255)
+    required    Boolean @default(false)
+    default     String? @db.VarChar(255)
+
+    customFunctionId String
+
+    customFunction CustomFunction @relation(fields: [customFunctionId], references: [id])
+
+    @@index([customFunctionId], name: "customFunctionId")
 }
