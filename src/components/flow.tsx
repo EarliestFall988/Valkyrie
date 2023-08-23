@@ -39,6 +39,7 @@ import { ResultNode } from "~/nodes/resultNode";
 import { VariableNode } from "~/nodes/variableNode";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { api } from "~/utils/api";
 
 const initialNodes: Node[] = [
   // {
@@ -70,7 +71,7 @@ const panOnDrag = [1];
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-export const Flow = () => {
+export const Flow = (props: { id: string }) => {
   const nodeTypes = useMemo(
     () => ({ variable: VariableNode, result: ResultNode }),
     []
@@ -199,12 +200,12 @@ export const Flow = () => {
           <Controls />
         </ReactFlow>
       </div>
-      <SideBar />
+      <SideBar jobId={props.id} />
     </ReactFlowProvider>
   );
 };
 
-const SideBar = () => {
+const SideBar = (props: { jobId: string }) => {
   const onDragStart = (
     event: React.DragEvent<HTMLDivElement>,
     nodeType: string
@@ -282,7 +283,7 @@ const SideBar = () => {
       <div className="rounded-b rounded-t border-x border-neutral-600 ">
         <p className="w-full rounded-t bg-neutral-600 text-center">Transform</p>
         <div className="w-full  border-b border-neutral-600 p-1 font-semibold">
-          <NewFunctionDialog>
+          <NewFunctionDialog jobId={props.jobId}>
             <div className="flex w-full items-center justify-start gap-2 rounded bg-gray-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-gray-500 focus:bg-gray-500">
               <PlusIcon className="h-4 w-4" />
               <p>New Function</p>
@@ -294,17 +295,20 @@ const SideBar = () => {
   );
 };
 
-type paramterType = {
+type parameterType = {
   name: string;
   type: "text" | "integer" | "decimal" | "boolean";
   io: "input" | "output";
 };
 
-const NewFunctionDialog: FC<{ children: ReactNode }> = ({ children }) => {
+const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
+  children,
+  jobId,
+}) => {
   const [functionName, setFunctionName] = useState("");
   const [functionDetails, setFunctionDetails] = useState("");
-  const [params, setParams] = useState<paramterType[]>([]);
-  const [OutParams, setOutParams] = useState<paramterType[]>([]);
+  const [params, setParams] = useState<parameterType[]>([]);
+  const [OutParams, setOutParams] = useState<parameterType[]>([]);
 
   const [animationParent] = useAutoAnimate();
 
@@ -326,6 +330,25 @@ const NewFunctionDialog: FC<{ children: ReactNode }> = ({ children }) => {
   const deleteOutParameter = useCallback((id: number) => {
     setOutParams((params) => params.filter((p, index) => index !== id));
   }, []);
+
+  const { mutate } = api.functions.createFunction.useMutation({
+    onSuccess: () => {
+      console.log("Function Created");
+    },
+    onError: () => {
+      console.log("Error Creating Function");
+    },
+  });
+
+  // const Save = () => {
+  //   mutate({
+  //     name: functionName,
+  //     description: functionDetails,
+  //     parameters: params,
+  //     outputParameters: OutParams,
+  //     jobId: jobId,
+  //   });
+  // };
 
   return (
     <Dialog.Root>
