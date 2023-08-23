@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   type Edge,
   type Node,
@@ -10,9 +10,12 @@ import {
   BackgroundVariant,
   Controls,
   SelectionMode,
+  ReactFlowProvider,
+  type ReactFlowInstance,
+  type NodeChange,
+  type EdgeChange,
+  type Connection,
 } from "reactflow";
-
-import * as ContextMenu from "@radix-ui/react-context-menu";
 
 const initialNodes: Node[] = [
   {
@@ -41,79 +44,123 @@ const initialEdges: Edge[] = [
 
 const panOnDrag = [1];
 
+let id = 0;
+const getId = () => `dndnode_${id++}`;
+
 export const Flow = () => {
+  const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
+  const [reactFlowInstance, setReactFlowInstance] =
+    useState<ReactFlowInstance | null>(null);
+
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
 
   const onNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    (changes: NodeChange[]) =>
+      setNodes((nds) => applyNodeChanges(changes, nds)),
     [setNodes]
   );
   const onEdgesChange = useCallback(
-    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+    (changes: EdgeChange[]) =>
+      setEdges((eds) => applyEdgeChanges(changes, eds)),
     [setEdges]
   );
 
   const onConnect = useCallback(
-    (params) => setEdges((eds) => addEdge(params, eds)),
+    (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
 
+  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+
+      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+      const type = event.dataTransfer.getData("application/reactflow");
+
+      // check if the dropped element is valid
+      if (typeof type === "undefined" || !type) {
+        return;
+      }
+
+      const position = reactFlowInstance?.project({
+        x: event.clientX - (reactFlowBounds?.left ?? 0),
+        y: event.clientY - (reactFlowBounds?.top ?? 0),
+      });
+      const newNode = {
+        id: getId(),
+        type,
+        position: {
+          x: position?.x ?? 0,
+          y: position?.y ?? 0,
+        },
+        data: { label: `${type} node` },
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+    },
+    [reactFlowInstance]
+  );
+
   return (
-    <ContextMenu.Root>
-      <ContextMenu.Trigger>
-        <div style={{ height: "100%" }}>
-          <ReactFlow
-            nodes={nodes}
-            onNodesChange={onNodesChange}
-            edges={edges}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            panOnScroll
-            panOnDrag={panOnDrag}
-            selectionMode={SelectionMode.Partial}
-          >
-            <Background
-              id="1"
-              gap={10}
-              color="#111"
-              variant={BackgroundVariant.Lines}
-            />
-            <Background
-              id="2"
-              gap={100}
-              offset={1}
-              color="#222"
-              variant={BackgroundVariant.Lines}
-            />
-            <Controls />
-          </ReactFlow>
-        </div>
-      </ContextMenu.Trigger>
-      <ContextMenu.Content className="rounded bg-neutral-800 p-2">
-        <ContextMenu.Item>Edit</ContextMenu.Item>
-        <ContextMenu.Item>Duplicate</ContextMenu.Item>
-        <ContextMenu.Separator />
-        <ContextMenu.Item>Archive</ContextMenu.Item>
+    <ReactFlowProvider>
+      <div ref={reactFlowWrapper} style={{ height: "100%" }}>
+        <ReactFlow
+          nodes={nodes}
+          onNodesChange={onNodesChange}
+          edges={edges}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          panOnScroll
+          panOnDrag={panOnDrag}
+          onInit={setReactFlowInstance}
+          selectionMode={SelectionMode.Partial}
+          fitView
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+        >
+          <Background
+            id="1"
+            gap={10}
+            color="#111"
+            variant={BackgroundVariant.Lines}
+          />
+          <Background
+            id="2"
+            gap={100}
+            offset={1}
+            color="#222"
+            variant={BackgroundVariant.Lines}
+          />
+          <Controls />
+        </ReactFlow>
+      </div>
+      <SideBar />
+    </ReactFlowProvider>
+  );
+};
 
-        <ContextMenu.Sub>
-          <ContextMenu.SubTrigger>More</ContextMenu.SubTrigger>
-          <ContextMenu.SubContent>
-            <ContextMenu.Item>Move to project…</ContextMenu.Item>
-            <ContextMenu.Item>Move to folder…</ContextMenu.Item>
-            <ContextMenu.Separator />
-            <ContextMenu.Item>Advanced options…</ContextMenu.Item>
-          </ContextMenu.SubContent>
-        </ContextMenu.Sub>
+const SideBar = () => {
+  const onDragStart = (event: React.DragEvent<HTMLDivElement>, nodeType) => {
+    event.dataTransfer.setData("application/reactflow", nodeType);
+    event.dataTransfer.effectAllowed = "move";
+  };
 
-        <ContextMenu.Separator />
-        <ContextMenu.Item>Share</ContextMenu.Item>
-        <ContextMenu.Item>Add to favorites</ContextMenu.Item>
-        <ContextMenu.Separator />
-        <ContextMenu.Item shortcut="⌘ ⌫" color="red">
-          Delete
-        </ContextMenu.Item>
-      </ContextMenu.Content>
-    </ContextMenu.Root>
+  return (
+    <div className="fixed right-0 top-20 z-10 h-[80vh] w-1/5 rounded-lg bg-neutral-700 p-2">
+      test
+      <div
+        draggable={true}
+        onDragStart={(event) => onDragStart(event, "c-234")}
+        className="w-full rounded bg-purple-700 p-2 font-semibold"
+      >
+        Drag Me
+      </div>
+    </div>
   );
 };
