@@ -12,7 +12,7 @@ type nodeData = {
 };
 
 export const VariableNode = (props: nodeData) => {
-  console.log(props.data);
+
 
   const dataType = props.data.variableType as
     | "text"

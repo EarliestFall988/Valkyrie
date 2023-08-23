@@ -75,6 +75,7 @@ model Parameters {
     type        String  @db.VarChar(255)
     required    Boolean @default(false)
     default     String? @db.VarChar(255)
+    io          String  @db.VarChar(255)
 
     customFunctionId String
 

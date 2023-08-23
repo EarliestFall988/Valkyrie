@@ -34,7 +34,7 @@ const JobPage: NextPage = () => {
     <div className="h-[100vh] w-full">
       <Ribbon job={job} errorLoading={isError} loading={isLoading} />
       <KeyBindings />
-      <Flow />
+      <Flow id={id} />
     </div>
   );
 };

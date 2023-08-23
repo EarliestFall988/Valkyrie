@@ -8,6 +8,7 @@ import {
   IdentificationIcon,
   ArrowDownOnSquareIcon,
   ArrowUpOnSquareIcon,
+  CodeBracketIcon,
 } from "@heroicons/react/24/outline";
 import {
   FC,
@@ -40,6 +41,7 @@ import { VariableNode } from "~/nodes/variableNode";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { api } from "~/utils/api";
+import { CustomFunction } from "~/nodes/customFunctionNode";
 
 const initialNodes: Node[] = [
   // {
@@ -73,7 +75,11 @@ const getId = () => `dndnode_${id++}`;
 
 export const Flow = (props: { id: string }) => {
   const nodeTypes = useMemo(
-    () => ({ variable: VariableNode, result: ResultNode }),
+    () => ({
+      variable: VariableNode,
+      result: ResultNode,
+      customFunction: CustomFunction,
+    }),
     []
   );
 
@@ -130,6 +136,11 @@ export const Flow = (props: { id: string }) => {
         variableType = type.split("-")[1] ?? "text";
       }
 
+      if (type.startsWith("customFunction")) {
+        nodeType = "customFunction";
+        variableType = type.split("-")[1] ?? "";
+      }
+
       const position = reactFlowInstance?.project({
         x: event.clientX - (reactFlowBounds?.left ?? 0),
         y: event.clientY - (reactFlowBounds?.top ?? 0),
@@ -158,6 +169,20 @@ export const Flow = (props: { id: string }) => {
             y: position?.y ?? 0,
           },
           data: { label: `${type} node`, variableType },
+        };
+
+        setNodes((nds) => nds.concat(newNode));
+      }
+
+      if (nodeType === "customFunction") {
+        const newNode = {
+          id: getId(),
+          type: nodeType,
+          position: {
+            x: position?.x ?? 0,
+            y: position?.y ?? 0,
+          },
+          data: { label: `${type} node`, functionId: variableType },
         };
 
         setNodes((nds) => nds.concat(newNode));
@@ -214,8 +239,12 @@ const SideBar = (props: { jobId: string }) => {
     event.dataTransfer.effectAllowed = "move";
   };
 
+  const { data: customFunctions } = api.functions.getFunctionsByJobId.useQuery({
+    jobId: props.jobId,
+  });
+
   return (
-    <div className="fixed right-0 top-20 z-10 flex h-[80vh] w-1/5 select-none flex-col gap-1 rounded-lg bg-neutral-700 p-2">
+    <div className="fixed right-0 top-20 z-10 flex h-[80vh] w-2/3 select-none flex-col gap-1 rounded-lg bg-neutral-700 p-2 md:w-1/2 lg:w-2/5">
       <div className="rounded-b rounded-t border-x border-neutral-600">
         <p className="w-full rounded-t bg-neutral-600 text-center">Storage</p>
         <div className="flex flex-col">
@@ -290,6 +319,25 @@ const SideBar = (props: { jobId: string }) => {
             </div>
           </NewFunctionDialog>
         </div>
+        {customFunctions?.map((f) => (
+          <div
+            key={f.id}
+            draggable={true}
+            onDragStart={(event) =>
+              onDragStart(event, `customFunction-${f.id}`)
+            }
+            className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <CodeBracketIcon className="h-6 w-6" />
+              <div>
+                <p className="font-semibold">{f.name}</p>
+                <p>{f.description}</p>
+              </div>
+            </div>
+            <div className="">{f.parameters.length} param(s)</div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -331,24 +379,83 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
     setOutParams((params) => params.filter((p, index) => index !== id));
   }, []);
 
+  const context = api.useContext().functions;
+
   const { mutate } = api.functions.createFunction.useMutation({
     onSuccess: () => {
       console.log("Function Created");
+      void context.invalidate();
     },
     onError: () => {
       console.log("Error Creating Function");
     },
   });
 
-  // const Save = () => {
-  //   mutate({
-  //     name: functionName,
-  //     description: functionDetails,
-  //     parameters: params,
-  //     outputParameters: OutParams,
-  //     jobId: jobId,
-  //   });
-  // };
+  const SaveFunction = useCallback(() => {
+    if (jobId === undefined || jobId === null || jobId === "") {
+      console.log("No Job ID");
+      return;
+    }
+
+    const parameters = params.map((p) => ({
+      name: p.name,
+      type: p.type,
+      io: p.io,
+    }));
+
+    parameters.push(
+      ...OutParams.map((p) => ({
+        name: p.name,
+        type: p.type,
+        io: p.io,
+      }))
+    );
+
+    mutate({
+      name: functionName,
+      description: functionDetails,
+      params: parameters.map((p) => ({
+        name: p.name,
+        type: p.type,
+        io: p.io,
+      })),
+      jobId: jobId,
+    });
+  }, [functionDetails, functionName, jobId, mutate, params, OutParams]);
+
+  const UpdateParameter = useCallback(
+    (
+      id: number,
+      name: string,
+      type: "text" | "integer" | "decimal" | "boolean",
+      io: string
+    ) => {
+      console.log("updating parameter");
+
+      if (io === "input" && id < params.length) {
+        setParams((params) =>
+          params.map((p, index) => {
+            if (index === id) {
+              return { name, type, io };
+            }
+            return p;
+          })
+        );
+      }
+
+      if (io === "output" && id < OutParams.length) {
+        setOutParams((params) =>
+          params.map((p, index) => {
+            if (index === id) {
+              return { name, type, io };
+            }
+            return p;
+          })
+        );
+      }
+    },
+    [OutParams.length, params.length]
+  );
 
   return (
     <Dialog.Root>
@@ -415,6 +522,9 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
                   name={p.name}
                   type={p.type}
                   io={p.io}
+                  textOut={(id, name, type, io) => {
+                    UpdateParameter(id, name, type, io);
+                  }}
                 />
               ))}
             </div>
@@ -440,6 +550,9 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
                   name={p.name}
                   type={p.type}
                   io={p.io}
+                  textOut={(id, name, type, io) => {
+                    UpdateParameter(id, name, type, io);
+                  }}
                 />
               ))}
             </div>
@@ -459,10 +572,15 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
               </div>
             </Dialog.Close>
             <Dialog.Close asChild>
-              <div className="flex w-32 items-center justify-center gap-2 rounded bg-purple-700 p-2 font-semibold outline-none hover:bg-purple-600 focus:bg-purple-600">
+              <button
+                onClick={() => {
+                  SaveFunction();
+                }}
+                className="flex w-32 items-center justify-center gap-2 rounded bg-purple-700 p-2 font-semibold outline-none hover:bg-purple-600 focus:bg-purple-600"
+              >
                 <CloudArrowUpIcon className="h-5 w-5" />
                 <p>Save</p>
-              </div>
+              </button>
             </Dialog.Close>
           </div>
         </Dialog.Content>
@@ -476,8 +594,14 @@ export const Parameter: FC<{
   paramId: string;
   type: string;
   io: string;
+  textOut: (
+    id: number,
+    name: string,
+    type: "text" | "integer" | "decimal" | "boolean",
+    io: string
+  ) => void;
   deleteParameter: (e: number) => void;
-}> = ({ name, type, io, paramId, deleteParameter }) => {
+}> = ({ name, type, io, paramId, deleteParameter, textOut }) => {
   const [parameterName, setParameterName] = useState("");
   const [parameterType, setParameterType] = useState<
     "text" | "integer" | "decimal" | "boolean"
@@ -494,6 +618,10 @@ export const Parameter: FC<{
   const deleteParam = () => {
     deleteParameter(parseInt(paramId));
   };
+
+  useEffect(() => {
+    textOut(parseInt(paramId), parameterName, parameterType, parameterIO);
+  }, [paramId, parameterName, parameterType, parameterIO, textOut]);
 
   return (
     <div className="mb-2 flex flex-col gap-2">

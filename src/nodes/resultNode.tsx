@@ -13,8 +13,6 @@ type nodeData = {
 
 export const ResultNode = (props: nodeData) => {
   
-    console.log(props.data);
-
   const dataType = props.data.variableType as
     | "text"
     | "integer"

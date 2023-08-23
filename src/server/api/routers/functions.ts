@@ -12,6 +12,7 @@ export const functionsRouter = createTRPCRouter({
           .object({
             name: z.string().min(3).max(100),
             type: z.string().min(3).max(100),
+            io: z.string().min(3).max(100),
           })
           .array(),
       })
@@ -31,6 +32,7 @@ export const functionsRouter = createTRPCRouter({
         name: string;
         type: string;
         required: boolean;
+        io: string;
         customFunctionId: string;
       }[];
 
@@ -40,6 +42,7 @@ export const functionsRouter = createTRPCRouter({
             name: param.name,
             type: param.type,
             required: true,
+            io: param.io,
             customFunctionId: functionId,
           };
         })
@@ -63,10 +66,33 @@ export const functionsRouter = createTRPCRouter({
         where: {
           jobId: input.jobId,
         },
+        include: {
+          parameters: true,
+        },
       });
 
       return functions;
     }),
+
+  getFunctionById: privateProcedure
+    .input(
+      z.object({
+        id: z.string().min(3).max(100),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const func = await ctx.prisma.customFunction.findFirst({
+        where: {
+          id: input.id,
+        },
+        include: {
+          parameters: true,
+        },
+      });
+
+      return func;
+    }),
+
   deleteFunction: privateProcedure
     .input(
       z
