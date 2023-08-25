@@ -42,6 +42,30 @@ export const jobsRouter = createTRPCRouter({
       return jobs;
     }),
 
+  updateJob: privateProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        title: z.string().min(3).max(100),
+        description: z.string().max(255).optional(),
+        jobData: z.string(),
+      })
+    )
+    .mutation(async ({ctx, input}) => {
+      const jobResult = await ctx.prisma.job.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          title: input.title,
+          description: input.description,
+          data: input.jobData,
+        },
+      });
+
+      return jobResult;
+    }),
+
   getAllJobs: privateProcedure
     .input(
       z.object({
@@ -65,12 +89,16 @@ export const jobsRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
-      const jobs = await ctx.prisma.job.findFirst({
+      const job = await ctx.prisma.job.findFirst({
         where: {
           id: input.id,
         },
+        include: {
+          customFunctions: true,
+          variables: true,
+        },
       });
 
-      return jobs;
+      return job;
     }),
 });

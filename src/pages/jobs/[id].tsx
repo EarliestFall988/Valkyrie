@@ -1,5 +1,9 @@
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { type Job } from "@prisma/client";
+import {
+  CloudArrowDownIcon,
+  CloudArrowUpIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
+import { CustomFunction, Variables, type Job } from "@prisma/client";
 import { type NextPage } from "next";
 import { useRouter } from "next/router";
 
@@ -8,6 +12,7 @@ import { LoadingSmall } from "~/components/loading";
 import { api } from "~/utils/api";
 import { Flow } from "~/components/flow";
 import { BackButtonComponent } from "~/components/backButton";
+import { useMemo, useState } from "react";
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -20,6 +25,10 @@ const JobPage: NextPage = () => {
     jobId = id;
   }
 
+  const [customFunctions, setCustomFunctions] = useState<CustomFunction[]>([]);
+  const [variables, setVariables] = useState<Variables[]>([]);
+  const [jobHasLoaded, setJobHasLoaded] = useState(false);
+
   const {
     data: job,
     isLoading,
@@ -28,11 +37,52 @@ const JobPage: NextPage = () => {
     id: jobId,
   });
 
+  const { mutate: updateJob } = api.jobs.updateJob.useMutation({
+    onSuccess: () => {
+      console.log("success");
+    },
+    onError: (error) => {
+      console.log("err", error);
+    },
+  });
+
+  useMemo(() => {
+    if (job === undefined || job === null) return;
+
+    if (jobHasLoaded) return;
+
+    const reactflowinstance = job.data;
+
+    if (!reactflowinstance) return;
+
+    console.log(reactflowinstance);
+
+    setCustomFunctions(job.customFunctions);
+    setVariables(job.variables);
+    setJobHasLoaded(true);
+  }, [job, jobHasLoaded]);
+
   if (typeof id !== "string") return null;
+
+  const saveBot = () => {
+    if (job === null || job === undefined) return;
+
+    updateJob({
+      id: jobId,
+      title: job.title,
+      description: job.description ?? undefined,
+      jobData: job.data,
+    });
+  };
 
   return (
     <div className="h-[100vh] w-full">
-      <Ribbon job={job} errorLoading={isError} loading={isLoading} />
+      <Ribbon
+        save={saveBot}
+        job={job}
+        errorLoading={isError}
+        loading={isLoading}
+      />
       <KeyBindings />
       <Flow id={id} />
     </div>
@@ -45,7 +95,8 @@ const Ribbon: React.FC<{
   job: Job | null | undefined;
   errorLoading: boolean;
   loading: boolean;
-}> = ({ job, errorLoading, loading }) => {
+  save: () => void;
+}> = ({ job, errorLoading, loading, save }) => {
   return (
     <div className="fixed top-0 z-20 flex w-full gap-2 border-b border-neutral-700 bg-neutral-800 p-2">
       <BackButtonComponent fallbackRoute="/dashboard" />
@@ -72,6 +123,12 @@ const Ribbon: React.FC<{
                 <div className="flex items-start gap-2">
                   <p className="text-lg font-semibold">{job?.title}</p>
                 </div>
+                <button
+                  onClick={save}
+                  className="rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-purple-600 focus:bg-purple-500"
+                >
+                  <CloudArrowUpIcon className="h-6 w-6" />
+                </button>
               </div>
             )}
           </>
