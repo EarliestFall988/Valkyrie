@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Handle, Position } from "reactflow";
 import { TextIcon } from "@radix-ui/react-icons";
 
@@ -12,7 +12,7 @@ type nodeData = {
 };
 
 export const VariableNode = (props: nodeData) => {
-
+  const [backgroundColor, setBackgroundColor] = useState<string>("white");
 
   const dataType = props.data.variableType as
     | "text"
@@ -24,9 +24,36 @@ export const VariableNode = (props: nodeData) => {
     console.log("VariableNode onChange", e);
   }, []);
 
+  useEffect(() => {
+    if (dataType === "text") {
+      setBackgroundColor("red");
+    }
+
+    if (dataType === "integer") {
+      setBackgroundColor("blue");
+    }
+
+    if (dataType === "boolean") {
+      setBackgroundColor("green");
+    }
+
+    if (dataType === "decimal") {
+      setBackgroundColor("yellow");
+    }
+  }, [dataType]);
+
   return (
     <>
       {/* <Handle type="target" position={Position.Left} /> */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={{
+          border: 0,
+          backgroundColor: backgroundColor,
+        }}
+        id="in"
+      />
       <div className="flex h-12 w-28 items-center justify-center gap-2 rounded-lg bg-gray-700 p-2">
         {dataType === "text" && <TextIcon className="h-4 w-4" />}
         {dataType === "integer" && <p className="text-sm">123</p>}
@@ -35,15 +62,15 @@ export const VariableNode = (props: nodeData) => {
         {(dataType === "text" ||
           dataType === "integer" ||
           dataType === "decimal") && (
-            <input
-              id="text"
-              name="text"
-              onChange={(e) => {
-                onChange(e.target.value);
-              }}
-              className="nodrag w-16 rounded px-1 text-neutral-800 outline-none"
-            />
-          )}
+          <input
+            id="text"
+            name="text"
+            onChange={(e) => {
+              onChange(e.target.value);
+            }}
+            className="nodrag w-16 rounded px-1 text-neutral-800 outline-none"
+          />
+        )}
         {dataType === "boolean" && (
           <select
             id="text"
@@ -58,7 +85,15 @@ export const VariableNode = (props: nodeData) => {
           </select>
         )}
       </div>
-      <Handle type="source" position={Position.Right} id="a" />
+      <Handle
+        type="source"
+        position={Position.Right}
+        style={{
+          border: 0,
+          backgroundColor: backgroundColor,
+        }}
+        id="out"
+      />
       {/* <Handle
         type="source"
         position={Position.Bottom}

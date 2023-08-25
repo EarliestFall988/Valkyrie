@@ -42,6 +42,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { api } from "~/utils/api";
 import { CustomFunction } from "~/nodes/customFunctionNode";
+import { CodeIcon } from "@radix-ui/react-icons";
 
 const initialNodes: Node[] = [
   // {
@@ -72,6 +73,10 @@ const panOnDrag = [1];
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
+
+const defaultEdgeOptions = {
+  type: "smoothstep",
+};
 
 export const Flow = (props: { id: string }) => {
   const nodeTypes = useMemo(
@@ -208,6 +213,7 @@ export const Flow = (props: { id: string }) => {
           onDragOver={onDragOver}
           onDrop={onDrop}
           nodeTypes={nodeTypes}
+          defaultEdgeOptions={defaultEdgeOptions}
         >
           <Background
             id="1"
@@ -239,106 +245,138 @@ const SideBar = (props: { jobId: string }) => {
     event.dataTransfer.effectAllowed = "move";
   };
 
+  const [open, setOpen] = useState(false);
+  // const [animationParent] = useAutoAnimate();
+
   const { data: customFunctions } = api.functions.getFunctionsByJobId.useQuery({
     jobId: props.jobId,
   });
 
   return (
-    <div className="fixed right-0 top-20 z-10 flex h-[80vh] w-2/3 select-none flex-col gap-1 rounded-lg bg-neutral-700 p-2 md:w-1/2 lg:w-2/5">
-      <div className="rounded-b rounded-t border-x border-neutral-600">
-        <p className="w-full rounded-t bg-neutral-600 text-center">Storage</p>
-        <div className="flex flex-col">
-          <div
-            draggable={true}
-            onDragStart={(event) => onDragStart(event, "variable-integer")}
-            className="w-full border-b border-neutral-600 p-2 font-semibold"
-          >
-            123
+    <div
+      className={`fixed right-0 top-20 z-10 flex h-[80vh] ${
+        open ? "w-2/3 bg-neutral-700 p-2 md:w-1/2 lg:w-2/5" : "p-2"
+      }  select-none flex-col gap-1 overflow-auto rounded transition duration-100 `}
+    >
+      {!open && (
+        <button className="rounded bg-neutral-600 p-1 outline-none hover:bg-neutral-500 focus:bg-neutral-500">
+          <CodeIcon className="h-6 w-6" onClick={() => setOpen(true)} />
+        </button>
+      )}
+      {open && (
+        <>
+          <div className="flex w-full items-center justify-end">
+            <button
+              onClick={() => {
+                setOpen(false);
+              }}
+              className="rounded bg-neutral-600 p-1 outline-none hover:bg-neutral-500 focus:bg-neutral-500"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
           </div>
-          <div
-            draggable={true}
-            onDragStart={(event) => onDragStart(event, "variable-decimal")}
-            className="w-full border-b border-neutral-600 p-2 font-semibold"
-          >
-            1.2
-          </div>
-          <div
-            draggable={true}
-            onDragStart={(event) => onDragStart(event, "variable-text")}
-            className="w-full border-b border-neutral-600 p-2 font-semibold"
-          >
-            Text
-          </div>
-          <div
-            draggable={true}
-            onDragStart={(event) => onDragStart(event, "variable-boolean")}
-            className="w-full border-b border-neutral-600 p-2 font-semibold"
-          >
-            y/n
-          </div>
-        </div>
-      </div>
-      <div className="rounded-b rounded-t border-x border-neutral-600 ">
-        <p className="w-full rounded-t bg-neutral-600 text-center">Output</p>
-        <div
-          draggable={true}
-          onDragStart={(event) => onDragStart(event, "result-integer")}
-          className="w-full border-b border-neutral-600 p-2 font-semibold"
-        >
-          123
-        </div>
-        <div
-          draggable={true}
-          onDragStart={(event) => onDragStart(event, "result-decimal")}
-          className="w-full border-b border-neutral-600 p-2 font-semibold"
-        >
-          1.2
-        </div>
-        <div
-          draggable={true}
-          onDragStart={(event) => onDragStart(event, "result-text")}
-          className="w-full border-b border-neutral-600 p-2 font-semibold"
-        >
-          Text
-        </div>
-        <div
-          draggable={true}
-          onDragStart={(event) => onDragStart(event, "result-boolean")}
-          className="w-full border-b border-neutral-600 p-2 font-semibold"
-        >
-          y/n
-        </div>
-      </div>
-      <div className="rounded-b rounded-t border-x border-neutral-600 ">
-        <p className="w-full rounded-t bg-neutral-600 text-center">Transform</p>
-        <div className="w-full  border-b border-neutral-600 p-1 font-semibold">
-          <NewFunctionDialog jobId={props.jobId}>
-            <div className="flex w-full items-center justify-start gap-2 rounded bg-gray-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-gray-500 focus:bg-gray-500">
-              <PlusIcon className="h-4 w-4" />
-              <p>New Function</p>
-            </div>
-          </NewFunctionDialog>
-        </div>
-        {customFunctions?.map((f) => (
-          <div
-            key={f.id}
-            draggable={true}
-            onDragStart={(event) =>
-              onDragStart(event, `customFunction-${f.id}`)
-            }
-            className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
-          >
-            <div className="flex items-center justify-center gap-2">
-              <CodeBracketIcon className="h-6 w-6" />
-              <div>
-                <p className="font-semibold">{f.name}</p>
-                <p>{f.description}</p>
+          <div className="rounded-b rounded-t border-x border-neutral-600">
+            <p className="w-full rounded-t bg-neutral-600 text-center">
+              Storage
+            </p>
+            <div className="flex flex-col">
+              <div
+                draggable={true}
+                onDragStart={(event) => onDragStart(event, "variable-integer")}
+                className="w-full border-b border-neutral-600 p-2 font-semibold"
+              >
+                123
+              </div>
+              <div
+                draggable={true}
+                onDragStart={(event) => onDragStart(event, "variable-decimal")}
+                className="w-full border-b border-neutral-600 p-2 font-semibold"
+              >
+                1.2
+              </div>
+              <div
+                draggable={true}
+                onDragStart={(event) => onDragStart(event, "variable-text")}
+                className="w-full border-b border-neutral-600 p-2 font-semibold"
+              >
+                Text
+              </div>
+              <div
+                draggable={true}
+                onDragStart={(event) => onDragStart(event, "variable-boolean")}
+                className="w-full border-b border-neutral-600 p-2 font-semibold"
+              >
+                y/n
               </div>
             </div>
-            <div className="">{f.parameters.length} param(s)</div>
           </div>
-        ))}
-      </div>
+          <div className="rounded-b rounded-t border-x border-neutral-600 ">
+            <p className="w-full rounded-t bg-neutral-600 text-center">
+              Output
+            </p>
+            <div
+              draggable={true}
+              onDragStart={(event) => onDragStart(event, "result-integer")}
+              className="w-full border-b border-neutral-600 p-2 font-semibold"
+            >
+              123
+            </div>
+            <div
+              draggable={true}
+              onDragStart={(event) => onDragStart(event, "result-decimal")}
+              className="w-full border-b border-neutral-600 p-2 font-semibold"
+            >
+              1.2
+            </div>
+            <div
+              draggable={true}
+              onDragStart={(event) => onDragStart(event, "result-text")}
+              className="w-full border-b border-neutral-600 p-2 font-semibold"
+            >
+              Text
+            </div>
+            <div
+              draggable={true}
+              onDragStart={(event) => onDragStart(event, "result-boolean")}
+              className="w-full border-b border-neutral-600 p-2 font-semibold"
+            >
+              y/n
+            </div>
+          </div>
+          <div className="rounded-b rounded-t border-x border-neutral-600 ">
+            <p className="w-full rounded-t bg-neutral-600 text-center">
+              Transform
+            </p>
+            <div className="w-full  border-b border-neutral-600 p-1 font-semibold">
+              <NewFunctionDialog jobId={props.jobId}>
+                <div className="flex w-full items-center justify-start gap-2 rounded bg-gray-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-gray-500 focus:bg-gray-500">
+                  <PlusIcon className="h-4 w-4" />
+                  <p>New Function</p>
+                </div>
+              </NewFunctionDialog>
+            </div>
+            {customFunctions?.map((f) => (
+              <div
+                key={f.id}
+                draggable={true}
+                onDragStart={(event) =>
+                  onDragStart(event, `customFunction-${f.id}`)
+                }
+                className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <CodeBracketIcon className="h-6 w-6" />
+                  <div>
+                    <p className="font-semibold">{f.name}</p>
+                    <p>{f.description}</p>
+                  </div>
+                </div>
+                <div className="">{f.parameters.length} param(s)</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -360,16 +398,16 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
 
   const [animationParent] = useAutoAnimate();
 
-  const newParameter = useCallback(() => {
+  const newParameter = () => {
     setParams((params) => [...params, { name: "", type: "text", io: "input" }]);
-  }, []);
+  };
 
-  const newOutParameter = useCallback(() => {
+  const newOutParameter = () => {
     setOutParams((params) => [
       ...params,
       { name: "", type: "text", io: "output" },
     ]);
-  }, []);
+  };
 
   const deleteParameter = useCallback((id: number) => {
     setParams((params) => params.filter((p, index) => index !== id));
