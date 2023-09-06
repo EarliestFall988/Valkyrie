@@ -1,16 +1,15 @@
 import {
-  CloudArrowDownIcon,
   CloudArrowUpIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
-import { CustomFunction, Variables, type Job } from "@prisma/client";
+import { type CustomFunction, type Variables, type Job } from "@prisma/client";
 import { type NextPage } from "next";
 import { useRouter } from "next/router";
 
 import "reactflow/dist/style.css";
 import { LoadingSmall } from "~/components/loading";
 import { api } from "~/utils/api";
-import { Flow } from "~/components/flow";
+import { Flow } from "~/flow/flow";
 import { BackButtonComponent } from "~/components/backButton";
 import { useMemo, useState } from "react";
 
@@ -55,7 +54,7 @@ const JobPage: NextPage = () => {
 
     if (!reactflowinstance) return;
 
-    console.log(reactflowinstance);
+    console.log("job data", reactflowinstance);
 
     setCustomFunctions(job.customFunctions);
     setVariables(job.variables);

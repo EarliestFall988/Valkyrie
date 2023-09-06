@@ -3,28 +3,21 @@ import {
   PlusIcon,
   XMarkIcon,
   TrashIcon,
-  ArrowDownCircleIcon,
-  ArrowUpCircleIcon,
   IdentificationIcon,
   ArrowDownOnSquareIcon,
   ArrowUpOnSquareIcon,
   CodeBracketIcon,
 } from "@heroicons/react/24/outline";
 import {
-  FC,
-  ReactNode,
+  type FC,
+  type ReactNode,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
+  useMemo,
 } from "react";
 import {
-  type Edge,
-  type Node,
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
   ReactFlow,
   Background,
   BackgroundVariant,
@@ -32,9 +25,11 @@ import {
   SelectionMode,
   ReactFlowProvider,
   type ReactFlowInstance,
-  type NodeChange,
-  type EdgeChange,
-  type Connection,
+  type OnNodesChange,
+  type OnEdgesChange,
+  type OnConnect,
+  type Edge,
+  type Node,
 } from "reactflow";
 import { ResultNode } from "~/nodes/resultNode";
 import { VariableNode } from "~/nodes/variableNode";
@@ -42,32 +37,35 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { api } from "~/utils/api";
 import { CustomFunction } from "~/nodes/customFunctionNode";
-import { CodeIcon } from "@radix-ui/react-icons";
+import { ChevronDownIcon, ChevronLeftIcon, CodeIcon } from "@radix-ui/react-icons";
 
-const initialNodes: Node[] = [
-  // {
-  //   id: "1",
-  //   data: { label: "Hello" },
-  //   position: { x: 0, y: 0 },
-  //   type: "input",
-  // },
-  // {
-  //   id: "2",
-  //   data: { label: "World" },
-  //   position: { x: 100, y: 100 },
-  // },
-  // {
-  //   id: "3",
-  //   data: { label: "Hi Mom" },
-  //   position: { x: 200, y: 200 },
-  //   type: "output",
-  // },
-] as Node[];
+import useFlowState from "./state";
+import { shallow } from "zustand/shallow";
+import { type Variables } from "@prisma/client";
 
-const initialEdges: Edge[] = [
-  // { id: "1-2", source: "1", target: "2", label: "to the", type: "smoothstep" },
-  // { id: "2-3", source: "2", target: "3", type: "smoothstep" },
-] as Edge[];
+const selector = (state: {
+  nodes: Node[];
+  edges: Edge[];
+  onNodesChange: OnNodesChange;
+  onEdgesChange: OnEdgesChange;
+  onConnect: OnConnect;
+  appendNode: (node: Node) => void;
+}) => ({
+  nodes: state.nodes,
+  edges: state.edges,
+  onNodesChange: state.onNodesChange,
+  onEdgesChange: state.onEdgesChange,
+  onConnect: state.onConnect,
+  appendNode: state.appendNode,
+});
+
+// const initialNodes: Node[] = [
+// ] as Node[];
+
+// const initialEdges: Edge[] = [
+//   // { id: "1-2", source: "1", target: "2", label: "to the", type: "smoothstep" },
+//   // { id: "2-3", source: "2", target: "3", type: "smoothstep" },
+// ] as Edge[];
 
 const panOnDrag = [1];
 
@@ -88,28 +86,51 @@ export const Flow = (props: { id: string }) => {
     []
   );
 
+  const [variables, setVariables] = useState<Variables[]>([]);
+
+  const setNewVariable = () => {
+    setVariables((variables) => [
+      ...variables,
+      {
+        id: getId(),
+        name: "new variable (" + variables.length + ")",
+        type: "text",
+        jobId: props.id,
+        description: "",
+        required: true,
+        default: "",
+        updatedAt: new Date(),
+        createdAt: new Date(),
+      },
+    ]);
+  };
+
+  const { data } = api.jobs.getJobById.useQuery({ id: props.id });
+
+  useEffect(() => {
+    if (data === undefined || data === null) return;
+    if (variables.length > 0) return;
+
+    setVariables(data?.variables ?? []);
+  }, [data, variables]);
+
+  const updateVar = useCallback((v: Variables) => {
+    setVariables((variables) =>
+      variables.map((variable) => {
+        if (variable.id === v.id) {
+          return v;
+        }
+        return variable;
+      })
+    );
+  }, []);
+
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
 
-  const [nodes, setNodes] = useState<Node[]>(initialNodes);
-  const [edges, setEdges] = useState<Edge[]>(initialEdges);
-
-  const onNodesChange = useCallback(
-    (changes: NodeChange[]) =>
-      setNodes((nds) => applyNodeChanges(changes, nds)),
-    [setNodes]
-  );
-  const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) =>
-      setEdges((eds) => applyEdgeChanges(changes, eds)),
-    [setEdges]
-  );
-
-  const onConnect = useCallback(
-    (params: Edge | Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
+  const { nodes, edges, appendNode, onNodesChange, onEdgesChange, onConnect } =
+    useFlowState(selector, shallow);
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -162,7 +183,8 @@ export const Flow = (props: { id: string }) => {
           data: { label: `${type} node`, variableType },
         };
 
-        setNodes((nds) => nds.concat(newNode));
+        // setNodes((nds) => nds.concat(newNode));
+        appendNode(newNode);
       }
 
       if (nodeType === "result") {
@@ -176,7 +198,8 @@ export const Flow = (props: { id: string }) => {
           data: { label: `${type} node`, variableType },
         };
 
-        setNodes((nds) => nds.concat(newNode));
+        // setNodes((nds) => nds.concat(newNode));
+        appendNode(newNode);
       }
 
       if (nodeType === "customFunction") {
@@ -190,11 +213,17 @@ export const Flow = (props: { id: string }) => {
           data: { label: `${type} node`, functionId: variableType },
         };
 
-        setNodes((nds) => nds.concat(newNode));
+        // setNodes((nds) => nds.concat(newNode));
+        appendNode(newNode);
       }
     },
-    [reactFlowInstance]
+    [reactFlowInstance, appendNode]
   );
+
+  const onInit = (instance: ReactFlowInstance) => {
+    console.log("flow loaded:", instance);
+    setReactFlowInstance(instance);
+  };
 
   return (
     <ReactFlowProvider>
@@ -207,7 +236,7 @@ export const Flow = (props: { id: string }) => {
           onConnect={onConnect}
           panOnScroll
           panOnDrag={panOnDrag}
-          onInit={setReactFlowInstance}
+          onInit={onInit}
           selectionMode={SelectionMode.Partial}
           fitView
           onDragOver={onDragOver}
@@ -231,41 +260,270 @@ export const Flow = (props: { id: string }) => {
           <Controls />
         </ReactFlow>
       </div>
-      <SideBar jobId={props.id} />
+      <VariablesPanel
+        setNewVar={setNewVariable}
+        updateVar={updateVar}
+        vars={variables}
+      />
+      <SideBar id={props.id} />
     </ReactFlowProvider>
   );
 };
 
-const SideBar = (props: { jobId: string }) => {
-  const onDragStart = (
-    event: React.DragEvent<HTMLDivElement>,
-    nodeType: string
-  ) => {
-    event.dataTransfer.setData("application/reactflow", nodeType);
-    event.dataTransfer.effectAllowed = "move";
-  };
+const VariablesPanel: React.FC<{
+  vars?: Variables[];
+  setNewVar: () => void;
+  updateVar: (v: Variables) => void;
+}> = ({ vars, setNewVar, updateVar }) => {
+  const [open, setOpen] = useState(true);
 
-  const [open, setOpen] = useState(false);
-  // const [animationParent] = useAutoAnimate();
+  const testVars = [] as Variables[];
 
-  const { data: customFunctions } = api.functions.getFunctionsByJobId.useQuery({
-    jobId: props.jobId,
+  testVars.push({
+    id: "1",
+    name: "test",
+    type: "text",
+    jobId: "1",
+    description: "test",
+    required: true,
+    default: "test",
+    updatedAt: new Date(),
+    createdAt: new Date(),
   });
 
   return (
     <div
-      className={`fixed right-0 top-20 z-10 flex h-[80vh] ${
-        open ? "w-2/3 bg-neutral-700 p-2 md:w-1/2 lg:w-2/5" : "p-2"
+      className={`fixed left-0 top-20 z-10 flex ${
+        open ? "w-80" : ""
+      }   rounded-r border-y border-r border-neutral-700 bg-neutral-800`}
+    >
+      {open && (
+        <div className={` w-full `}>
+          <button
+            onClick={() => {
+              setOpen(false);
+            }}
+            className="absolute left-1 top-1 rounded transition duration-200 hover:bg-neutral-500"
+          >
+            <ChevronLeftIcon className="h-6 w-6" />
+          </button>
+          <div className="flex flex-col">
+            {(vars === undefined || vars.length === 0) && (
+              <p className="w-full p-2 text-center  text-neutral-400">
+                no variables yet...
+              </p>
+            )}
+            {vars !== undefined && vars.length > 0 && (
+              <>
+                <div className="max-h-[70vh] overflow-y-auto overflow-x-clip mt-8">
+                  {vars?.map((v) => (
+                    <VariableItem updateVar={updateVar} v={v} key={v.id} />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          <div className="p-2">
+            <button
+              onClick={setNewVar}
+              className="focus:purple-600 flex w-full items-center justify-center rounded bg-neutral-600 p-1 text-neutral-300 transition duration-100 hover:bg-purple-600 hover:text-purple-300 focus:text-purple-300 "
+            >
+              <PlusIcon className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+      )}
+      {!open && (
+        <div>
+          <button
+            onClick={() => {
+              setOpen(true);
+            }}
+            className="items-center justify-center p-1 text-neutral-200"
+          >
+            <CodeBracketIcon className="h-6 w-6" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const VariableItem: React.FC<{
+  v: Variables;
+  updateVar: (v: Variables) => void;
+}> = ({ v, updateVar }) => {
+  const [open, setOpen] = useState(false);
+
+  const [animationParent] = useAutoAnimate();
+
+  const [name, setName] = useState(v.name ?? "");
+  const [description, setDescription] = useState(v.description ?? "");
+  const [required, setRequired] = useState(v.required ?? false);
+  const [type, setType] = useState(v.type ?? "text");
+
+  useEffect(() => {
+    const newVar = {
+      ...v,
+      name,
+      description,
+      required,
+      type,
+    };
+
+    updateVar(newVar);
+  }, [name, description, required, type, v, updateVar]);
+
+  useMemo(() => {
+    if (v === undefined) return;
+
+    setName(v.name ?? "");
+    setDescription(v.description ?? "");
+    setRequired(v.required ?? false);
+    setType(v.type ?? "text");
+  }, [v]);
+
+  return (
+    <div
+      ref={animationParent}
+      key={v.id}
+      className="flex w-full flex-col items-start justify-center gap-1 p-2"
+    >
+      <button
+        onClick={() => {
+          setOpen(!open);
+        }}
+        className="flex w-full items-center justify-between rounded-2xl bg-neutral-600 p-1 px-3 pb-1 transition duration-300 hover:scale-105 hover:shadow-lg"
+      >
+        <div className="flex items-center justify-center gap-2">
+          {v.type === "text" && <div className="rounded bg-red-500 p-1" />}
+          {v.type === "integer" && <div className="rounded bg-blue-500 p-1" />}
+          {v.type === "decimal" && (
+            <div className="rounded bg-yellow-500 p-1" />
+          )}
+          {v.type === "boolean" && <div className="rounded bg-green-500 p-1" />}
+          <p className="w-full truncate whitespace-nowrap">
+            {name}{" "}
+            <span className="text-sm text-neutral-400">
+              {" "}
+              • {v.type !== "boolean" ? v.type : "yes/no"}
+            </span>
+          </p>
+        </div>
+        <div>
+          <ChevronDownIcon
+            className={`h-5 w-5 ${
+              open ? "rotate-180" : ""
+            } transition duration-100`}
+          />
+        </div>
+      </button>
+      {open && (
+        <div className="flex w-full flex-col gap-2 rounded border border-neutral-600 p-2 px-3">
+          <div>
+            <p className="font-semibold">Name</p>
+            <input
+              onChange={(e) => {
+                setName(e.target.value);
+              }}
+              type="text"
+              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+              value={name}
+              placeholder="Be sure to name the function exactly as it is in the code..."
+            />
+          </div>
+          <div>
+            <p className="font-semibold">Description</p>
+            <input
+              onChange={(e) => {
+                setDescription(e.target.value);
+              }}
+              type="text"
+              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+              value={description}
+              placeholder="Be sure to name the function exactly as it is in the code..."
+            />
+          </div>
+          <div>
+            <p className="font-semibold">Required?</p>
+            <select
+              onChange={(e) => {
+                setRequired(e.target.value === "true");
+              }}
+              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+              value={required ? "true" : "false"}
+              placeholder="Be sure to name the function exactly as it is in the code..."
+            >
+              <option value={"true"}>Required</option>
+              <option value={"false"}>Optional</option>
+            </select>
+          </div>
+          <div>
+            <p className="font-semibold">Type</p>
+            <select
+              onChange={(e) => {
+                setType(e.target.value);
+              }}
+              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+              value={type}
+              placeholder="Be sure to name the function exactly as it is in the code..."
+            >
+              <option value={"text"}>Text</option>
+              <option value={"integer"}>Integer</option>
+              <option value={"decimal"}>decimal</option>
+              <option value={"boolean"}>yes/no</option>
+            </select>
+          </div>
+          <div className="flex w-full flex-col gap-2 rounded border border-dashed border-red-900 p-2">
+            <p className="font-semibold">Danger Zone</p>
+            <button className="flex items-center justify-center gap-2 rounded bg-red-700 p-1 transition duration-100 hover:bg-red-600">
+              <TrashIcon className="h-6 w-6" />
+              <p className="font-semibold">Delete</p>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SideBar = (props: { id: string }) => {
+  return (
+    <>
+      <div className="fixed right-0 top-20 z-10 flex select-none flex-col gap-1 overflow-auto rounded bg-neutral-700 transition duration-100">
+        <button className="p-2">test</button>
+      </div>
+    </>
+  );
+};
+
+const SidePanel: React.FC<{
+  children: ReactNode;
+  icon: ReactNode;
+  title: string;
+}> = ({ children, icon, title }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div
+      className={` z-10 flex  ${
+        open ? "h-[80vh] w-[50vw] bg-neutral-700 p-2" : "p-2"
       }  select-none flex-col gap-1 overflow-auto rounded transition duration-100 `}
     >
       {!open && (
-        <button className="rounded bg-neutral-600 p-1 outline-none hover:bg-neutral-500 focus:bg-neutral-500">
-          <CodeIcon className="h-6 w-6" onClick={() => setOpen(true)} />
+        <button
+          onClick={() => {
+            setOpen(true);
+          }}
+          className="rounded bg-neutral-600 p-1 outline-none hover:bg-neutral-500 focus:bg-neutral-500"
+        >
+          {icon}
         </button>
       )}
       {open && (
         <>
-          <div className="flex w-full items-center justify-end">
+          <div className="flex w-full items-center justify-between">
+            <p className="pb-1 text-2xl font-semibold">{title}</p>
             <button
               onClick={() => {
                 setOpen(false);
@@ -275,109 +533,123 @@ const SideBar = (props: { jobId: string }) => {
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
-          <div className="rounded-b rounded-t border-x border-neutral-600">
-            <p className="w-full rounded-t bg-neutral-600 text-center">
-              Storage
-            </p>
-            <div className="flex flex-col">
-              <div
-                draggable={true}
-                onDragStart={(event) => onDragStart(event, "variable-integer")}
-                className="w-full border-b border-neutral-600 p-2 font-semibold"
-              >
-                123
-              </div>
-              <div
-                draggable={true}
-                onDragStart={(event) => onDragStart(event, "variable-decimal")}
-                className="w-full border-b border-neutral-600 p-2 font-semibold"
-              >
-                1.2
-              </div>
-              <div
-                draggable={true}
-                onDragStart={(event) => onDragStart(event, "variable-text")}
-                className="w-full border-b border-neutral-600 p-2 font-semibold"
-              >
-                Text
-              </div>
-              <div
-                draggable={true}
-                onDragStart={(event) => onDragStart(event, "variable-boolean")}
-                className="w-full border-b border-neutral-600 p-2 font-semibold"
-              >
-                y/n
-              </div>
-            </div>
-          </div>
-          <div className="rounded-b rounded-t border-x border-neutral-600 ">
-            <p className="w-full rounded-t bg-neutral-600 text-center">
-              Output
-            </p>
-            <div
-              draggable={true}
-              onDragStart={(event) => onDragStart(event, "result-integer")}
-              className="w-full border-b border-neutral-600 p-2 font-semibold"
-            >
-              123
-            </div>
-            <div
-              draggable={true}
-              onDragStart={(event) => onDragStart(event, "result-decimal")}
-              className="w-full border-b border-neutral-600 p-2 font-semibold"
-            >
-              1.2
-            </div>
-            <div
-              draggable={true}
-              onDragStart={(event) => onDragStart(event, "result-text")}
-              className="w-full border-b border-neutral-600 p-2 font-semibold"
-            >
-              Text
-            </div>
-            <div
-              draggable={true}
-              onDragStart={(event) => onDragStart(event, "result-boolean")}
-              className="w-full border-b border-neutral-600 p-2 font-semibold"
-            >
-              y/n
-            </div>
-          </div>
-          <div className="rounded-b rounded-t border-x border-neutral-600 ">
-            <p className="w-full rounded-t bg-neutral-600 text-center">
-              Transform
-            </p>
-            <div className="w-full  border-b border-neutral-600 p-1 font-semibold">
-              <NewFunctionDialog jobId={props.jobId}>
-                <div className="flex w-full items-center justify-start gap-2 rounded bg-gray-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-gray-500 focus:bg-gray-500">
-                  <PlusIcon className="h-4 w-4" />
-                  <p>New Function</p>
-                </div>
-              </NewFunctionDialog>
-            </div>
-            {customFunctions?.map((f) => (
-              <div
-                key={f.id}
-                draggable={true}
-                onDragStart={(event) =>
-                  onDragStart(event, `customFunction-${f.id}`)
-                }
-                className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <CodeBracketIcon className="h-6 w-6" />
-                  <div>
-                    <p className="font-semibold">{f.name}</p>
-                    <p>{f.description}</p>
-                  </div>
-                </div>
-                <div className="">{f.parameters.length} param(s)</div>
-              </div>
-            ))}
-          </div>
+          {children}
         </>
       )}
     </div>
+  );
+};
+
+const FunctionsSidePanel = (props: { jobId: string }) => {
+  const onDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    nodeType: string
+  ) => {
+    event.dataTransfer.setData("application/reactflow", nodeType);
+    event.dataTransfer.effectAllowed = "move";
+  };
+
+  const { data: customFunctions } = api.functions.getFunctionsByJobId.useQuery({
+    jobId: props.jobId,
+  });
+
+  return (
+    <SidePanel title={"Functions"} icon={<CodeIcon className="h-6 w-6" />}>
+      <div className="rounded-b rounded-t border-x border-neutral-600">
+        <p className="w-full rounded-t bg-neutral-600 text-center">Storage</p>
+        <div className="flex flex-col">
+          <div
+            draggable={true}
+            onDragStart={(event) => onDragStart(event, "variable-integer")}
+            className="w-full border-b border-neutral-600 p-2 font-semibold"
+          >
+            123
+          </div>
+          <div
+            draggable={true}
+            onDragStart={(event) => onDragStart(event, "variable-decimal")}
+            className="w-full border-b border-neutral-600 p-2 font-semibold"
+          >
+            1.2
+          </div>
+          <div
+            draggable={true}
+            onDragStart={(event) => onDragStart(event, "variable-text")}
+            className="w-full border-b border-neutral-600 p-2 font-semibold"
+          >
+            Text
+          </div>
+          <div
+            draggable={true}
+            onDragStart={(event) => onDragStart(event, "variable-boolean")}
+            className="w-full border-b border-neutral-600 p-2 font-semibold"
+          >
+            y/n
+          </div>
+        </div>
+      </div>
+      <div className="rounded-b rounded-t border-x border-neutral-600 ">
+        <p className="w-full rounded-t bg-neutral-600 text-center">Output</p>
+        <div
+          draggable={true}
+          onDragStart={(event) => onDragStart(event, "result-integer")}
+          className="w-full border-b border-neutral-600 p-2 font-semibold"
+        >
+          123
+        </div>
+        <div
+          draggable={true}
+          onDragStart={(event) => onDragStart(event, "result-decimal")}
+          className="w-full border-b border-neutral-600 p-2 font-semibold"
+        >
+          1.2
+        </div>
+        <div
+          draggable={true}
+          onDragStart={(event) => onDragStart(event, "result-text")}
+          className="w-full border-b border-neutral-600 p-2 font-semibold"
+        >
+          Text
+        </div>
+        <div
+          draggable={true}
+          onDragStart={(event) => onDragStart(event, "result-boolean")}
+          className="w-full border-b border-neutral-600 p-2 font-semibold"
+        >
+          y/n
+        </div>
+      </div>
+      <div className="rounded-b rounded-t border-x border-neutral-600 ">
+        <p className="w-full rounded-t bg-neutral-600 text-center">Transform</p>
+        <div className="w-full  border-b border-neutral-600 p-1 font-semibold">
+          <NewFunctionDialog jobId={props.jobId}>
+            <div className="flex w-full items-center justify-start gap-2 rounded bg-gray-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-gray-500 focus:bg-gray-500">
+              <PlusIcon className="h-4 w-4" />
+              <p>New Function</p>
+            </div>
+          </NewFunctionDialog>
+        </div>
+        {customFunctions?.map((f) => (
+          <div
+            key={f.id}
+            draggable={true}
+            onDragStart={(event) =>
+              onDragStart(event, `customFunction-${f.id}`)
+            }
+            className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <CodeBracketIcon className="h-6 w-6" />
+              <div>
+                <p className="font-semibold">{f.name}</p>
+                <p>{f.description}</p>
+              </div>
+            </div>
+            <div className="">{f.parameters.length} param(s)</div>
+          </div>
+        ))}
+      </div>
+    </SidePanel>
   );
 };
 
