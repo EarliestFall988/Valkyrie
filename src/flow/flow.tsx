@@ -37,7 +37,11 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { api } from "~/utils/api";
 import { CustomFunction } from "~/nodes/customFunctionNode";
-import { ChevronDownIcon, ChevronLeftIcon, CodeIcon } from "@radix-ui/react-icons";
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  CodeIcon,
+} from "@radix-ui/react-icons";
 
 import useFlowState from "./state";
 import { shallow } from "zustand/shallow";
@@ -71,6 +75,7 @@ const panOnDrag = [1];
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
+const getVarId = () => `var_${id++}`;
 
 const defaultEdgeOptions = {
   type: "smoothstep",
@@ -92,7 +97,7 @@ export const Flow = (props: { id: string }) => {
     setVariables((variables) => [
       ...variables,
       {
-        id: getId(),
+        id: getVarId(),
         name: "new variable (" + variables.length + ")",
         type: "text",
         jobId: props.id,
@@ -154,7 +159,18 @@ export const Flow = (props: { id: string }) => {
 
       if (type.startsWith("variable")) {
         nodeType = "variable";
-        variableType = type.split("-")[1] ?? "text";
+        const id = type.split("-")[1] ?? "";
+        console.log("variable id", id);
+        if (id !== undefined) {
+          const foundVar = variables.find((v) => v.id === id);
+          if (foundVar !== undefined) {
+            variableType = foundVar.type;
+            console.log(variableType);
+          } else {
+            console.log("no var found");
+          }
+        }
+        // variableType = type.split("-")[1] ?? "text";
       }
 
       if (type.startsWith("result")) {
@@ -217,7 +233,7 @@ export const Flow = (props: { id: string }) => {
         appendNode(newNode);
       }
     },
-    [reactFlowInstance, appendNode]
+    [reactFlowInstance, appendNode, variables]
   );
 
   const onInit = (instance: ReactFlowInstance) => {
@@ -315,7 +331,7 @@ const VariablesPanel: React.FC<{
             )}
             {vars !== undefined && vars.length > 0 && (
               <>
-                <div className="max-h-[70vh] overflow-y-auto overflow-x-clip mt-8">
+                <div className="mt-8 max-h-[70vh] overflow-y-auto overflow-x-clip">
                   {vars?.map((v) => (
                     <VariableItem updateVar={updateVar} v={v} key={v.id} />
                   ))}
@@ -372,7 +388,7 @@ const VariableItem: React.FC<{
     };
 
     updateVar(newVar);
-  }, [name, description, required, type, v, updateVar]);
+  }, [name, description, required, type, updateVar]);
 
   useMemo(() => {
     if (v === undefined) return;
@@ -382,6 +398,14 @@ const VariableItem: React.FC<{
     setRequired(v.required ?? false);
     setType(v.type ?? "text");
   }, [v]);
+
+  const onDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    nodeType: string
+  ) => {
+    event.dataTransfer.setData("application/reactflow", nodeType);
+    event.dataTransfer.effectAllowed = "move";
+  };
 
   return (
     <div
@@ -393,29 +417,39 @@ const VariableItem: React.FC<{
         onClick={() => {
           setOpen(!open);
         }}
-        className="flex w-full items-center justify-between rounded-2xl bg-neutral-600 p-1 px-3 pb-1 transition duration-300 hover:scale-105 hover:shadow-lg"
+        className="w-full"
       >
-        <div className="flex items-center justify-center gap-2">
-          {v.type === "text" && <div className="rounded bg-red-500 p-1" />}
-          {v.type === "integer" && <div className="rounded bg-blue-500 p-1" />}
-          {v.type === "decimal" && (
-            <div className="rounded bg-yellow-500 p-1" />
-          )}
-          {v.type === "boolean" && <div className="rounded bg-green-500 p-1" />}
-          <p className="w-full truncate whitespace-nowrap">
-            {name}{" "}
-            <span className="text-sm text-neutral-400">
-              {" "}
-              • {v.type !== "boolean" ? v.type : "yes/no"}
-            </span>
-          </p>
-        </div>
-        <div>
-          <ChevronDownIcon
-            className={`h-5 w-5 ${
-              open ? "rotate-180" : ""
-            } transition duration-100`}
-          />
+        <div
+          draggable={true}
+          onDragStart={(event) => onDragStart(event, `variable-${v.id}`)}
+          className="flex w-full items-center justify-between rounded-2xl bg-neutral-600 p-1 px-3 pb-1 transition duration-300 hover:scale-105 hover:shadow-lg"
+        >
+          <div className="flex items-center justify-center gap-2">
+            {v.type === "text" && <div className="rounded bg-red-500 p-1" />}
+            {v.type === "integer" && (
+              <div className="rounded bg-blue-500 p-1" />
+            )}
+            {v.type === "decimal" && (
+              <div className="rounded bg-yellow-500 p-1" />
+            )}
+            {v.type === "boolean" && (
+              <div className="rounded bg-green-500 p-1" />
+            )}
+            <p className="w-full truncate whitespace-nowrap">
+              {name}{" "}
+              <span className="text-sm text-neutral-400">
+                {" "}
+                • {v.type !== "boolean" ? v.type : "yes/no"}
+              </span>
+            </p>
+          </div>
+          <div>
+            <ChevronDownIcon
+              className={`h-5 w-5 ${
+                open ? "rotate-180" : ""
+              } transition duration-100`}
+            />
+          </div>
         </div>
       </button>
       {open && (
