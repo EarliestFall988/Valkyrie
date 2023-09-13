@@ -11,7 +11,7 @@ type nodeData = {
 };
 
 export const VariableNode = (props: nodeData) => {
-  console.log(props);
+  
 
   const [backgroundColor, setBackgroundColor] = useState<string>("white");
 

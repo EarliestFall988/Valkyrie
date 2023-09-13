@@ -37,17 +37,16 @@ import { VariableNode } from "~/nodes/variableNode";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { api } from "~/utils/api";
-import { CustomFunction } from "~/nodes/customFunctionNode";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CodeIcon,
 } from "@radix-ui/react-icons";
 
 import useFlowState from "./state";
 import { shallow } from "zustand/shallow";
-import { type Variables } from "@prisma/client";
+import { type CustomFunction, type Parameters, type Variables } from "@prisma/client";
+import { CustomFunction as CustomFunctionNode } from "~/nodes/customFunctionNode";
 
 const selector = (state: {
   nodes: Node[];
@@ -75,7 +74,6 @@ const selector = (state: {
 
 const panOnDrag = [1];
 
-let id = 0;
 const getId = () => crypto.randomUUID();
 
 const defaultEdgeOptions = {
@@ -93,7 +91,7 @@ export const Flow = (props: { id: string }) => {
     () => ({
       variable: VariableNode,
       result: ResultNode,
-      customFunction: CustomFunction,
+      customFunction: CustomFunctionNode,
     }),
     []
   );
@@ -163,7 +161,7 @@ export const Flow = (props: { id: string }) => {
 
       const data = JSON.parse(rawData) as nodeData;
 
-      console.log(data);
+      // console.log(data);
 
       const position = reactFlowInstance?.project({
         x: event.clientX - (reactFlowBounds?.left ?? 0),
@@ -179,6 +177,22 @@ export const Flow = (props: { id: string }) => {
             y: position?.y ?? 0,
           },
           data: JSON.parse(rawData) as varMetaDataType,
+        };
+
+        // setNodes((nds) => nds.concat(newNode));
+        appendNode(newNode);
+      }
+
+      if(data.nodeType === "customFunction")
+      {
+        const newNode = {
+          id: getId(),
+          type: data.nodeType,
+          position: {
+            x: position?.x ?? 0,
+            y: position?.y ?? 0,
+          },
+          data: JSON.parse(rawData) as functionMetaData,
         };
 
         // setNodes((nds) => nds.concat(newNode));
@@ -233,7 +247,7 @@ export const Flow = (props: { id: string }) => {
         updateVar={updateVar}
         vars={variables}
       />
-      <SideBar id={props.id} />
+      <CustomFunctionSideBar id={props.id} />
     </ReactFlowProvider>
   );
 };
@@ -488,12 +502,26 @@ const VariableItem: React.FC<{
   );
 };
 
-const SideBar = (props: { id: string }) => {
+export type functionMetaData = nodeData & {
+  parameters: parameterType[];
+};
+
+const CustomFunctionSideBar = (props: { id: string }) => {
   const onDragStart = (
     event: React.DragEvent<HTMLDivElement>,
-    nodeType: string
+    f: CustomFunction & {parameters: Parameters[] },
   ) => {
-    event.dataTransfer.setData("application/reactflow", nodeType);
+
+    const data = JSON.stringify({
+      id: f.id,
+      nodeType: "customFunction",
+      label: f.name,
+      description: f.description,
+      parameters: f.parameters
+    });
+
+
+    event.dataTransfer.setData("application/reactflow", data);
     event.dataTransfer.effectAllowed = "move";
   };
 
@@ -539,7 +567,7 @@ const SideBar = (props: { id: string }) => {
                 key={f.id}
                 draggable={true}
                 onDragStart={(event) =>
-                  onDragStart(event, `customFunction-${f.id}`)
+                  onDragStart(event, f)
                 }
                 className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
               >
@@ -557,162 +585,6 @@ const SideBar = (props: { id: string }) => {
         )}
       </div>
     </>
-  );
-};
-
-const SidePanel: React.FC<{
-  children: ReactNode;
-  icon: ReactNode;
-  title: string;
-}> = ({ children, icon, title }) => {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div
-      className={` z-10 flex  ${
-        open ? "h-[80vh] w-[50vw] bg-neutral-700 p-2" : "p-2"
-      }  select-none flex-col gap-1 overflow-auto rounded transition duration-100 `}
-    >
-      {!open && (
-        <button
-          onClick={() => {
-            setOpen(true);
-          }}
-          className="rounded bg-neutral-600 p-1 outline-none hover:bg-neutral-500 focus:bg-neutral-500"
-        >
-          {icon}
-        </button>
-      )}
-      {open && (
-        <>
-          <div className="flex w-full items-center justify-between">
-            <p className="pb-1 text-2xl font-semibold">{title}</p>
-            <button
-              onClick={() => {
-                setOpen(false);
-              }}
-              className="rounded bg-neutral-600 p-1 outline-none hover:bg-neutral-500 focus:bg-neutral-500"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
-          </div>
-          {children}
-        </>
-      )}
-    </div>
-  );
-};
-
-const FunctionsSidePanel = (props: { jobId: string }) => {
-  const onDragStart = (
-    event: React.DragEvent<HTMLDivElement>,
-    nodeType: string
-  ) => {
-    event.dataTransfer.setData("application/reactflow", nodeType);
-    event.dataTransfer.effectAllowed = "move";
-  };
-
-  const { data: customFunctions } = api.functions.getFunctionsByJobId.useQuery({
-    jobId: props.jobId,
-  });
-
-  return (
-    <SidePanel title={"Functions"} icon={<CodeIcon className="h-6 w-6" />}>
-      {/* <div className="rounded-b rounded-t border-x border-neutral-600">
-        <p className="w-full rounded-t bg-neutral-600 text-center">Storage</p>
-        <div className="flex flex-col">
-          <div
-            draggable={true}
-            onDragStart={(event) => onDragStart(event, "variable-integer")}
-            className="w-full border-b border-neutral-600 p-2 font-semibold"
-          >
-            123
-          </div>
-          <div
-            draggable={true}
-            onDragStart={(event) => onDragStart(event, "variable-decimal")}
-            className="w-full border-b border-neutral-600 p-2 font-semibold"
-          >
-            1.2
-          </div>
-          <div
-            draggable={true}
-            onDragStart={(event) => onDragStart(event, "variable-text")}
-            className="w-full border-b border-neutral-600 p-2 font-semibold"
-          >
-            Text
-          </div>
-          <div
-            draggable={true}
-            onDragStart={(event) => onDragStart(event, "variable-boolean")}
-            className="w-full border-b border-neutral-600 p-2 font-semibold"
-          >
-            y/n
-          </div>
-        </div>
-      </div>
-      <div className="rounded-b rounded-t border-x border-neutral-600 ">
-        <p className="w-full rounded-t bg-neutral-600 text-center">Output</p>
-        <div
-          draggable={true}
-          onDragStart={(event) => onDragStart(event, "result-integer")}
-          className="w-full border-b border-neutral-600 p-2 font-semibold"
-        >
-          123
-        </div>
-        <div
-          draggable={true}
-          onDragStart={(event) => onDragStart(event, "result-decimal")}
-          className="w-full border-b border-neutral-600 p-2 font-semibold"
-        >
-          1.2
-        </div>
-        <div
-          draggable={true}
-          onDragStart={(event) => onDragStart(event, "result-text")}
-          className="w-full border-b border-neutral-600 p-2 font-semibold"
-        >
-          Text
-        </div>
-        <div
-          draggable={true}
-          onDragStart={(event) => onDragStart(event, "result-boolean")}
-          className="w-full border-b border-neutral-600 p-2 font-semibold"
-        >
-          y/n
-        </div>
-      </div> */}
-      <div className="rounded-b rounded-t border-x border-neutral-600 ">
-        <p className="w-full rounded-t bg-neutral-600 text-center">Transform</p>
-        <div className="w-full  border-b border-neutral-600 p-1 font-semibold">
-          <NewFunctionDialog jobId={props.jobId}>
-            <div className="flex w-full items-center justify-start gap-2 rounded bg-gray-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-gray-500 focus:bg-gray-500">
-              <PlusIcon className="h-4 w-4" />
-              <p>New Function</p>
-            </div>
-          </NewFunctionDialog>
-        </div>
-        {customFunctions?.map((f) => (
-          <div
-            key={f.id}
-            draggable={true}
-            onDragStart={(event) =>
-              onDragStart(event, `customFunction-${f.id}`)
-            }
-            className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
-          >
-            <div className="flex items-center justify-center gap-2">
-              <CodeBracketIcon className="h-6 w-6" />
-              <div>
-                <p className="font-semibold">{f.name}</p>
-                <p>{f.description}</p>
-              </div>
-            </div>
-            <div className="">{f.parameters.length} param(s)</div>
-          </div>
-        ))}
-      </div>
-    </SidePanel>
   );
 };
 

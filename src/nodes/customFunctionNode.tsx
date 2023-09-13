@@ -3,6 +3,7 @@ import { Handle, Position } from "reactflow";
 import { TextIcon } from "@radix-ui/react-icons";
 import { api } from "~/utils/api";
 import { CodeBracketIcon } from "@heroicons/react/24/outline";
+import { type functionMetaData } from "~/flow/flow";
 
 const handleStyle = {
   top: 10,
@@ -12,17 +13,14 @@ const handleStyle = {
 };
 
 type nodeData = {
-  data: {
-    label: string;
-    functionId: string;
-  };
+  data: functionMetaData;
 };
 
 export const CustomFunction = (props: nodeData) => {
-  console.log(props.data);
+  // console.log(props.data);
 
   const { data, isLoading } = api.functions.getFunctionById.useQuery({
-    id: props.data.functionId,
+    id: props.data.id,
   });
 
   if (isLoading) return <div className="animate-pulse">loading...</div>;
