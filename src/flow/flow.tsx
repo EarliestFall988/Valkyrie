@@ -7,6 +7,7 @@ import {
   ArrowDownOnSquareIcon,
   ArrowUpOnSquareIcon,
   CodeBracketIcon,
+  CpuChipIcon,
 } from "@heroicons/react/24/outline";
 import {
   type FC,
@@ -40,6 +41,7 @@ import { CustomFunction } from "~/nodes/customFunctionNode";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
+  ChevronRightIcon,
   CodeIcon,
 } from "@radix-ui/react-icons";
 
@@ -74,11 +76,16 @@ const selector = (state: {
 const panOnDrag = [1];
 
 let id = 0;
-const getId = () => `dndnode_${id++}`;
-const getVarId = () => `var_${id++}`;
+const getId = () => crypto.randomUUID();
 
 const defaultEdgeOptions = {
   type: "smoothstep",
+};
+
+type nodeData = {
+  id: string;
+  nodeType: string;
+  label: string;
 };
 
 export const Flow = (props: { id: string }) => {
@@ -97,7 +104,7 @@ export const Flow = (props: { id: string }) => {
     setVariables((variables) => [
       ...variables,
       {
-        id: getVarId(),
+        id: getId(),
         name: "new variable (" + variables.length + ")",
         type: "text",
         jobId: props.id,
@@ -147,93 +154,38 @@ export const Flow = (props: { id: string }) => {
       event.preventDefault();
 
       const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-      const type = event.dataTransfer.getData("application/reactflow");
+      const rawData = event.dataTransfer.getData("application/reactflow");
 
       // check if the dropped element is valid
-      if (typeof type === "undefined" || !type) {
+      if (!rawData || typeof rawData !== "string") {
         return;
       }
 
-      let nodeType = "variable";
-      let variableType = "text";
+      const data = JSON.parse(rawData) as nodeData;
 
-      if (type.startsWith("variable")) {
-        nodeType = "variable";
-        const id = type.split("-")[1] ?? "";
-        console.log("variable id", id);
-        if (id !== undefined) {
-          const foundVar = variables.find((v) => v.id === id);
-          if (foundVar !== undefined) {
-            variableType = foundVar.type;
-            console.log(variableType);
-          } else {
-            console.log("no var found");
-          }
-        }
-        // variableType = type.split("-")[1] ?? "text";
-      }
-
-      if (type.startsWith("result")) {
-        nodeType = "result";
-        variableType = type.split("-")[1] ?? "text";
-      }
-
-      if (type.startsWith("customFunction")) {
-        nodeType = "customFunction";
-        variableType = type.split("-")[1] ?? "";
-      }
+      console.log(data);
 
       const position = reactFlowInstance?.project({
         x: event.clientX - (reactFlowBounds?.left ?? 0),
         y: event.clientY - (reactFlowBounds?.top ?? 0),
       });
 
-      if (nodeType === "variable") {
+      if (data.nodeType === "variable") {
         const newNode = {
           id: getId(),
-          type: nodeType,
+          type: data.nodeType,
           position: {
             x: position?.x ?? 0,
             y: position?.y ?? 0,
           },
-          data: { label: `${type} node`, variableType },
-        };
-
-        // setNodes((nds) => nds.concat(newNode));
-        appendNode(newNode);
-      }
-
-      if (nodeType === "result") {
-        const newNode = {
-          id: getId(),
-          type: nodeType,
-          position: {
-            x: position?.x ?? 0,
-            y: position?.y ?? 0,
-          },
-          data: { label: `${type} node`, variableType },
-        };
-
-        // setNodes((nds) => nds.concat(newNode));
-        appendNode(newNode);
-      }
-
-      if (nodeType === "customFunction") {
-        const newNode = {
-          id: getId(),
-          type: nodeType,
-          position: {
-            x: position?.x ?? 0,
-            y: position?.y ?? 0,
-          },
-          data: { label: `${type} node`, functionId: variableType },
+          data: JSON.parse(rawData) as varMetaDataType,
         };
 
         // setNodes((nds) => nds.concat(newNode));
         appendNode(newNode);
       }
     },
-    [reactFlowInstance, appendNode, variables]
+    [reactFlowInstance, appendNode]
   );
 
   const onInit = (instance: ReactFlowInstance) => {
@@ -310,8 +262,8 @@ const VariablesPanel: React.FC<{
   return (
     <div
       className={`fixed left-0 top-20 z-10 flex ${
-        open ? "w-80" : ""
-      }   rounded-r border-y border-r border-neutral-700 bg-neutral-800`}
+        open ? "w-80" : "p-1"
+      }   rounded-r border-y border-r border-neutral-700 bg-neutral-800 transition duration-100`}
     >
       {open && (
         <div className={` w-full `}>
@@ -365,6 +317,15 @@ const VariablesPanel: React.FC<{
   );
 };
 
+export type varMetaDataType = {
+  id: string;
+  nodeType: string;
+  label: string;
+  description: string;
+  required: boolean;
+  type: string;
+};
+
 const VariableItem: React.FC<{
   v: Variables;
   updateVar: (v: Variables) => void;
@@ -399,11 +360,17 @@ const VariableItem: React.FC<{
     setType(v.type ?? "text");
   }, [v]);
 
-  const onDragStart = (
-    event: React.DragEvent<HTMLDivElement>,
-    nodeType: string
-  ) => {
-    event.dataTransfer.setData("application/reactflow", nodeType);
+  const onDragStart = (event: React.DragEvent<HTMLDivElement>) => {
+    const nodeData = JSON.stringify({
+      id: v.id,
+      nodeType: "variable",
+      label: v.name,
+      description: v.description,
+      required: v.required,
+      type: v.type,
+    } as varMetaDataType);
+
+    event.dataTransfer.setData("application/reactflow", nodeData);
     event.dataTransfer.effectAllowed = "move";
   };
 
@@ -421,7 +388,7 @@ const VariableItem: React.FC<{
       >
         <div
           draggable={true}
-          onDragStart={(event) => onDragStart(event, `variable-${v.id}`)}
+          onDragStart={(event) => onDragStart(event)}
           className="flex w-full items-center justify-between rounded-2xl bg-neutral-600 p-1 px-3 pb-1 transition duration-300 hover:scale-105 hover:shadow-lg"
         >
           <div className="flex items-center justify-center gap-2">
@@ -522,10 +489,72 @@ const VariableItem: React.FC<{
 };
 
 const SideBar = (props: { id: string }) => {
+  const onDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    nodeType: string
+  ) => {
+    event.dataTransfer.setData("application/reactflow", nodeType);
+    event.dataTransfer.effectAllowed = "move";
+  };
+
+  const { data: customFunctions } = api.functions.getFunctionsByJobId.useQuery({
+    jobId: props.id,
+  });
+
+  const [open, setOpen] = useState(false);
+
   return (
     <>
-      <div className="fixed right-0 top-20 z-10 flex select-none flex-col gap-1 overflow-auto rounded bg-neutral-700 transition duration-100">
-        <button className="p-2">test</button>
+      <div className="fixed right-0 top-20 z-10 flex select-none flex-col gap-1 overflow-auto rounded-l border-y border-l border-neutral-700 bg-neutral-800 transition duration-100">
+        <div className="flex items-center justify-end w-full">
+          <button
+            onClick={() => {
+              setOpen(!open);
+            }}
+            className="p-2"
+          >
+            {!open && <CpuChipIcon className="h-6 w-6" />}
+            {open && (
+              <div>
+                <ChevronRightIcon className="h-6 w-6" />
+              </div>
+            )}
+          </button>
+        </div>
+        {open && (
+          <div className="rounded-b rounded-t border-x border-neutral-600 ">
+            <p className="w-full rounded-t bg-neutral-600 text-center">
+              Functions
+            </p>
+            <div className="w-full  border-b border-neutral-600 p-1 font-semibold">
+              <NewFunctionDialog jobId={props.id}>
+                <div className="flex w-full items-center justify-start gap-2 rounded bg-gray-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-gray-500 focus:bg-gray-500">
+                  <PlusIcon className="h-4 w-4" />
+                  <p>New Function</p>
+                </div>
+              </NewFunctionDialog>
+            </div>
+            {customFunctions?.map((f) => (
+              <div
+                key={f.id}
+                draggable={true}
+                onDragStart={(event) =>
+                  onDragStart(event, `customFunction-${f.id}`)
+                }
+                className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <CodeBracketIcon className="h-6 w-6" />
+                  <div>
+                    <p className="font-semibold">{f.name}</p>
+                    <p>{f.description}</p>
+                  </div>
+                </div>
+                <div className="">{f.parameters.length} param(s)</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );
@@ -589,7 +618,7 @@ const FunctionsSidePanel = (props: { jobId: string }) => {
 
   return (
     <SidePanel title={"Functions"} icon={<CodeIcon className="h-6 w-6" />}>
-      <div className="rounded-b rounded-t border-x border-neutral-600">
+      {/* <div className="rounded-b rounded-t border-x border-neutral-600">
         <p className="w-full rounded-t bg-neutral-600 text-center">Storage</p>
         <div className="flex flex-col">
           <div
@@ -652,7 +681,7 @@ const FunctionsSidePanel = (props: { jobId: string }) => {
         >
           y/n
         </div>
-      </div>
+      </div> */}
       <div className="rounded-b rounded-t border-x border-neutral-600 ">
         <p className="w-full rounded-t bg-neutral-600 text-center">Transform</p>
         <div className="w-full  border-b border-neutral-600 p-1 font-semibold">

@@ -1,20 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { Handle, Position } from "reactflow";
 import { TextIcon } from "@radix-ui/react-icons";
+import { type varMetaDataType } from "~/flow/flow";
+import { ArchiveBoxIcon } from "@heroicons/react/24/solid";
 
 const handleStyle = { left: 10 };
 
 type nodeData = {
-  data: {
-    label: string;
-    variableType: string;
-  };
+  data: varMetaDataType;
 };
 
 export const VariableNode = (props: nodeData) => {
+  console.log(props);
+
   const [backgroundColor, setBackgroundColor] = useState<string>("white");
 
-  const dataType = props.data.variableType as
+  const dataType = props.data.type as
     | "text"
     | "integer"
     | "decimal"
@@ -54,12 +55,15 @@ export const VariableNode = (props: nodeData) => {
         }}
         id="in"
       />
-      <div className="flex h-12 w-28 items-center justify-center gap-2 rounded-lg bg-gray-700 p-2">
-        {dataType === "text" && <TextIcon className="h-4 w-4" />}
-        {dataType === "integer" && <p className="text-sm">123</p>}
+      <div className="flex h-6 items-center justify-center gap-2 rounded bg-zinc-700 px-4">
+        {/* {dataType === "text" && <TextIcon className="h-4 w-4" />}
+        {dataType === "integer" && <p className="text-xs">123</p>}
         {dataType === "decimal" && <p className="text-sm">1.2</p>}
-        {dataType === "boolean" && <p className="text-sm">y/n</p>}
-        {(dataType === "text" ||
+        {dataType === "boolean" && <p className="text-sm">y/n</p>} */}
+        <p className="whitespace-nowrap font-semibold z-20">
+          {props?.data.label || "(Unnamed)"}{" "}
+        </p>
+        {/* {(dataType === "text" ||
           dataType === "integer" ||
           dataType === "decimal") && (
           <input
@@ -83,7 +87,7 @@ export const VariableNode = (props: nodeData) => {
             <option value={"1"}>Yes</option>
             <option value={"0"}>No</option>
           </select>
-        )}
+        )} */}
       </div>
       <Handle
         type="source"
