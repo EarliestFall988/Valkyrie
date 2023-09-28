@@ -190,7 +190,7 @@ const JobCard: React.FC<{
 
   return (
     <Link
-      href={`/jobs/${job.id}`}
+      href={`/jobs/${job.id}/instructions`}
       className="flex h-56 select-none items-start justify-between rounded bg-neutral-900 p-4 transition duration-200 hover:bg-neutral-800"
     >
       {isDeleting && markedForDeletion ? (

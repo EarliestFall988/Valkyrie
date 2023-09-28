@@ -1,6 +1,7 @@
 import {
   CloudArrowUpIcon,
   ExclamationTriangleIcon,
+  SignalIcon,
 } from "@heroicons/react/24/outline";
 import { type CustomFunction, type Variables, type Job } from "@prisma/client";
 import { type NextPage } from "next";
@@ -12,6 +13,7 @@ import { api } from "~/utils/api";
 import { Flow } from "~/flow/flow";
 import { BackButtonComponent } from "~/components/backButton";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -122,12 +124,20 @@ const Ribbon: React.FC<{
                 <div className="flex items-start gap-2">
                   <p className="text-lg font-semibold">{job?.title}</p>
                 </div>
-                <button
-                  onClick={save}
-                  className="rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-purple-600 focus:bg-purple-500"
-                >
-                  <CloudArrowUpIcon className="h-6 w-6" />
-                </button>
+                <div className="flex items-center justify-center gap-2">
+                  <Link
+                  href={`/jobs/${job.id}/connection`}
+                    className="rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-purple-600 focus:bg-purple-500"
+                  >
+                    <SignalIcon className="h-6 w-6" />
+                  </Link>
+                  <button
+                    onClick={save}
+                    className="rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-purple-600 focus:bg-purple-500"
+                  >
+                    <CloudArrowUpIcon className="h-6 w-6" />
+                  </button>
+                </div>
               </div>
             )}
           </>
