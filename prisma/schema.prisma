@@ -44,9 +44,7 @@ model Variables {
 
     jobId String
 
-    job Job @relation(fields: [jobId], references: [id])
-
-    @@index([jobId], name: "jobId")
+    job Job[]
 }
 
 model CustomFunction {
@@ -60,9 +58,7 @@ model CustomFunction {
 
     jobId String
 
-    job Job @relation(fields: [jobId], references: [id])
-
-    @@index([jobId], name: "jobId")
+    job Job[]
 }
 
 model Parameters {

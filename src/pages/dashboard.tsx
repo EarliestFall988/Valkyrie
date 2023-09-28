@@ -191,7 +191,7 @@ const JobCard: React.FC<{
   return (
     <Link
       href={`/jobs/${job.id}`}
-      className="flex h-56 select-none items-start justify-between rounded-lg border border-neutral-900 p-4 transition duration-200 hover:border-neutral-800"
+      className="flex h-56 select-none items-start justify-between rounded bg-neutral-900 p-4 transition duration-200 hover:bg-neutral-800"
     >
       {isDeleting && markedForDeletion ? (
         <div className="flex h-full w-full items-center justify-center">

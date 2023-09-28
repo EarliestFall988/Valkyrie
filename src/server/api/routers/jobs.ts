@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
+import { CustomFunction } from "~/nodes/customFunctionNode";
 
 export const jobsRouter = createTRPCRouter({
   createJob: privateProcedure
@@ -31,15 +32,57 @@ export const jobsRouter = createTRPCRouter({
         .array()
     )
     .mutation(async ({ ctx, input }) => {
-      const jobs = await ctx.prisma.job.deleteMany({
+      const customFunctions = await ctx.prisma.customFunction.findMany({
         where: {
-          id: {
-            in: input.map((i) => i.id),
+          jobId: {
+            in: input.map((id) => id.id),
           },
         },
       });
 
-      return jobs;
+      const variables = await ctx.prisma.variables.findMany({
+        where: {
+          jobId: {
+            in: input.map((id) => id.id),
+          },
+        },
+      });
+
+      const result = await ctx.prisma.$transaction([
+        ...input.map((id) =>
+          ctx.prisma.job.update({
+            where: {
+              id: id.id,
+            },
+            data: {
+              customFunctions: {
+                deleteMany: {
+                  id: {
+                    in: customFunctions.map((cf) => cf.id),
+                  },
+                },
+              },
+              variables: {
+                deleteMany: {
+                  id: {
+                    in: variables.map((v) => v.id),
+                  },
+                },
+              },
+            },
+          }),
+        ),
+
+        ...input.map((id) =>
+          ctx.prisma.job.delete({
+            where: {
+              id: id.id,
+            },
+          }),
+        ),
+      ]);
+
+      return result;
     }),
 
   updateJob: privateProcedure
@@ -51,7 +94,7 @@ export const jobsRouter = createTRPCRouter({
         jobData: z.string(),
       })
     )
-    .mutation(async ({ctx, input}) => {
+    .mutation(async ({ ctx, input }) => {
       const jobResult = await ctx.prisma.job.update({
         where: {
           id: input.id,
