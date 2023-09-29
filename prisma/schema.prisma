@@ -79,3 +79,18 @@ model Parameters {
 
     @@index([customFunctionId], name: "customFunctionId")
 }
+
+model Pins {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    pinCode String @db.VarChar(255)
+    userId  String @db.VarChar(255)
+    status  String @db.VarChar(255)
+
+    deviceId          String @db.VarChar(255)
+    deviceName        String @db.VarChar(255)
+    deviceDescription String @db.VarChar(255)
+    deviceType        String @db.VarChar(255)
+}
