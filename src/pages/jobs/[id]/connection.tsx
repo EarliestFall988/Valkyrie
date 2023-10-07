@@ -4,6 +4,7 @@ import { ArrowLeftIcon, CheckIcon } from "@radix-ui/react-icons";
 import { type NextPage } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { TooltipComponent } from "~/components/tooltip";
 
 const Connection: NextPage = () => {
   const router = useRouter();
@@ -52,22 +53,24 @@ const Connection: NextPage = () => {
         <div className="rounded-md border border-neutral-700 bg-neutral-900 p-4 lg:w-1/2">
           <div className="p-5">
             <p className="w-full select-none text-center text-lg text-neutral-400">
-              Paste this pin into your state machine
+              Paste this pin into your Device
             </p>
             <div className="flex w-full items-center justify-center gap-3">
               <h3 className="font-mono text-4xl font-bold">{code}</h3>
-              <button onClick={copyCodeToClipboard}>
-                <div ref={animationParent}>
-                  {!copied && (
-                    <Square2StackIcon className="h-8 w-8 text-neutral-300 transition duration-200 hover:scale-105 hover:text-purple-400" />
-                  )}
-                  {copied && (
-                    <div className="flex flex-col items-center justify-center text-green-500 transition duration-200 hover:text-purple-400">
-                      <CheckIcon className="h-8 w-8" />
-                    </div>
-                  )}
-                </div>
-              </button>
+              <TooltipComponent content="copy pin" side="right" delayDuration={0} >
+                <button onClick={copyCodeToClipboard}>
+                  <div ref={animationParent}>
+                    {!copied && (
+                      <Square2StackIcon className="h-8 w-8 text-neutral-300 transition duration-200 hover:scale-105 hover:text-purple-400" />
+                    )}
+                    {copied && (
+                      <div className="flex flex-col items-center justify-center text-green-500 transition duration-200 hover:text-purple-400">
+                        <CheckIcon className="h-8 w-8" />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              </TooltipComponent>
             </div>
             <div className="m-auto my-6 w-1/2 border-t border-neutral-700" />
             {/* <div ref={animationParent} className="select-none">

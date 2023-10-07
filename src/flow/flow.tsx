@@ -45,8 +45,13 @@ import {
 
 import useFlowState from "./state";
 import { shallow } from "zustand/shallow";
-import { type CustomFunction, type Parameters, type Variables } from "@prisma/client";
+import {
+  type CustomFunction,
+  type Parameters,
+  type Variables,
+} from "@prisma/client";
 import { CustomFunction as CustomFunctionNode } from "~/nodes/customFunctionNode";
+import { TooltipComponent } from "~/components/tooltip";
 
 const selector = (state: {
   nodes: Node[];
@@ -183,8 +188,7 @@ export const Flow = (props: { id: string }) => {
         appendNode(newNode);
       }
 
-      if(data.nodeType === "customFunction")
-      {
+      if (data.nodeType === "customFunction") {
         const newNode = {
           id: getId(),
           type: data.nodeType,
@@ -285,10 +289,11 @@ const VariablesPanel: React.FC<{
             onClick={() => {
               setOpen(false);
             }}
-            className="absolute left-1 top-1 rounded transition duration-200 hover:bg-neutral-500"
+            className="absolute left-1 top-1 rounded transition duration-200 hover:bg-neutral-500 "
           >
             <ChevronLeftIcon className="h-6 w-6" />
           </button>
+
           <div className="flex flex-col">
             {(vars === undefined || vars.length === 0) && (
               <p className="w-full p-2 text-center  text-neutral-400">
@@ -317,14 +322,16 @@ const VariablesPanel: React.FC<{
       )}
       {!open && (
         <div>
-          <button
-            onClick={() => {
-              setOpen(true);
-            }}
-            className="items-center justify-center p-1 text-neutral-200"
-          >
-            <CodeBracketIcon className="h-6 w-6" />
-          </button>
+          <TooltipComponent content="Variables" description="Define and drag/drop variables from this panel here." side="right">
+            <button
+              onClick={() => {
+                setOpen(true);
+              }}
+              className="items-center justify-center p-1 text-neutral-200"
+            >
+              <CodeBracketIcon className="h-6 w-6" />
+            </button>
+          </TooltipComponent>
         </div>
       )}
     </div>
@@ -509,17 +516,15 @@ export type functionMetaData = nodeData & {
 const CustomFunctionSideBar = (props: { id: string }) => {
   const onDragStart = (
     event: React.DragEvent<HTMLDivElement>,
-    f: CustomFunction & {parameters: Parameters[] },
+    f: CustomFunction & { parameters: Parameters[] }
   ) => {
-
     const data = JSON.stringify({
       id: f.id,
       nodeType: "customFunction",
       label: f.name,
       description: f.description,
-      parameters: f.parameters
+      parameters: f.parameters,
     });
-
 
     event.dataTransfer.setData("application/reactflow", data);
     event.dataTransfer.effectAllowed = "move";
@@ -534,20 +539,22 @@ const CustomFunctionSideBar = (props: { id: string }) => {
   return (
     <>
       <div className="fixed right-0 top-20 z-10 flex select-none flex-col gap-1 overflow-auto rounded-l border-y border-l border-neutral-700 bg-neutral-800 transition duration-100">
-        <div className="flex items-center justify-end w-full">
-          <button
-            onClick={() => {
-              setOpen(!open);
-            }}
-            className="p-2"
-          >
-            {!open && <CpuChipIcon className="h-6 w-6" />}
-            {open && (
-              <div>
-                <ChevronRightIcon className="h-6 w-6" />
-              </div>
-            )}
-          </button>
+        <div className="flex w-full items-center justify-end">
+          <TooltipComponent content="Functions" description="Define and drag/drop from this panel here." side="right">
+            <button
+              onClick={() => {
+                setOpen(!open);
+              }}
+              className="p-2"
+            >
+              {!open && <CpuChipIcon className="h-6 w-6" />}
+              {open && (
+                <div>
+                  <ChevronRightIcon className="h-6 w-6" />
+                </div>
+              )}
+            </button>
+          </TooltipComponent>
         </div>
         {open && (
           <div className="rounded-b rounded-t border-x border-neutral-600 ">
@@ -566,9 +573,7 @@ const CustomFunctionSideBar = (props: { id: string }) => {
               <div
                 key={f.id}
                 draggable={true}
-                onDragStart={(event) =>
-                  onDragStart(event, f)
-                }
+                onDragStart={(event) => onDragStart(event, f)}
                 className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
               >
                 <div className="flex items-center justify-center gap-2">

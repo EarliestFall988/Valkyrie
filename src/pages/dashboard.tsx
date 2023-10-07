@@ -87,7 +87,7 @@ const Dashboard: NextPage = () => {
         <div className="h-[8vh]" />
         <div className="flex w-full flex-col gap-2 rounded-lg p-2 md:m-auto md:w-1/2">
           <div className="flex items-center justify-between gap-5">
-            <h3 className="select-none text-3xl font-semibold">Bots</h3>
+            <h3 className="select-none text-3xl font-semibold">Instructions</h3>
             <div className="flex items-center justify-center gap-2">
               <Link href="/jobs/new">
                 <div className="flex select-none items-center justify-center gap-2 rounded border border-transparent p-2 transition duration-200 hover:cursor-pointer hover:border-purple-500 hover:text-purple-500">
@@ -141,7 +141,7 @@ const Dashboard: NextPage = () => {
             {!loading && errorLoading && (
               <div className="flex h-[30vh] items-center justify-center gap-2">
                 <p className="text-2xl font-semibold text-red-300">
-                  Error Loading Jobs
+                  Error Loading Instructions
                 </p>
                 <ExclamationTriangleIcon className="h-6 w-6 rotate-3 text-red-500" />
               </div>
@@ -191,7 +191,7 @@ const JobCard: React.FC<{
   return (
     <Link
       href={`/jobs/${job.id}/instructions`}
-      className="flex h-56 select-none items-start justify-between rounded bg-neutral-900 p-4 transition duration-200 hover:bg-neutral-800"
+      className="flex h-56 select-none items-start justify-between rounded bg-neutral-800 p-4 transition duration-200 hover:bg-neutral-700"
     >
       {isDeleting && markedForDeletion ? (
         <div className="flex h-full w-full items-center justify-center">
@@ -199,12 +199,22 @@ const JobCard: React.FC<{
         </div>
       ) : (
         <>
-          <div>
-            <div className="flex items-center justify-center gap-2">
-              <CpuChipIcon className="h-5 w-5 translate-y-[2px] text-amber-200" />
-              <p className="text-2xl font-semibold">{job.title}</p>
+          <div className="flex h-full w-full flex-col items-start justify-between">
+            <div className="flex w-full flex-col items-start justify-start gap-2">
+              <div className="flex items-center justify-center gap-2 ">
+                <CpuChipIcon className="h-5 w-5 translate-y-[2px] text-amber-200" />
+                <p className="text-2xl font-semibold">{job.title}</p>
+              </div>
+              <p className="text-neutral-400">{job.description}</p>
             </div>
-            <p className="text-neutral-400">{job.description}</p>
+            {/* <div className="flex w-full">
+              <Link
+                href={`/jobs/${job.id}/connection`}
+                className="rounded bg-yellow-700 p-2 text-center transition duration-100 hover:scale-105 hover:bg-yellow-600"
+              >
+                View Devices
+              </Link>
+            </div> */}
           </div>
           {showDeletion && (
             <button
@@ -218,7 +228,7 @@ const JobCard: React.FC<{
                 className={`h-6 w-6 transition duration-200  ${
                   markedForDeletion
                     ? "hover:text-300 text-red-500"
-                    : "text-neutral-700 hover:text-neutral-500"
+                    : "text-neutral-500 hover:text-neutral-300"
                 }`}
               />
             </button>

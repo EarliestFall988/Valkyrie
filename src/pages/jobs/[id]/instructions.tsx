@@ -14,6 +14,7 @@ import { Flow } from "~/flow/flow";
 import { BackButtonComponent } from "~/components/backButton";
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { TooltipComponent } from "~/components/tooltip";
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -125,18 +126,30 @@ const Ribbon: React.FC<{
                   <p className="text-lg font-semibold">{job?.title}</p>
                 </div>
                 <div className="flex items-center justify-center gap-2">
-                  <Link
-                  href={`/jobs/${job.id}/connection`}
-                    className="rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-purple-600 focus:bg-purple-500"
+                  <TooltipComponent
+                    content="Connect"
+                    description="Connect to a compatible device over the internet."
+                    side="top"
                   >
-                    <SignalIcon className="h-6 w-6" />
-                  </Link>
-                  <button
-                    onClick={save}
-                    className="rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-purple-600 focus:bg-purple-500"
+                    <Link
+                      href={`/jobs/${job.id}/connection`}
+                      className="rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-neutral-600 focus:bg-neutral-600"
+                    >
+                      <SignalIcon className="h-6 w-6" />
+                    </Link>
+                  </TooltipComponent>
+                  <TooltipComponent
+                    content="Save Changes"
+                    description="Save changes to the cloud and push changes the connected device."
+                    side="top"
                   >
-                    <CloudArrowUpIcon className="h-6 w-6" />
-                  </button>
+                    <button
+                      onClick={save}
+                      className="flex gap-1 rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-neutral-600 focus:bg-neutral-600"
+                    >
+                      <CloudArrowUpIcon className="h-6 w-6" />
+                    </button>
+                  </TooltipComponent>
                 </div>
               </div>
             )}
