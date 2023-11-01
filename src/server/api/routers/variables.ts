@@ -111,6 +111,11 @@ export const variablesRouter = createTRPCRouter({
               jobId: variable.jobId,
               required: variable.required,
               value: variable.value,
+              job: {
+                connect: {
+                  id: variable.jobId,
+                },
+              },
             },
           });
         })
@@ -126,9 +131,20 @@ export const variablesRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       //disconnect the variable from the job
-      await ctx.prisma.job.update({
+
+      const variable = await ctx.prisma.variables.findUnique({
         where: {
           id: input.id,
+        },
+      });
+
+      if (variable == null || variable == undefined) {
+        throw new Error("Variable does not exist");
+      }
+
+      await ctx.prisma.job.update({
+        where: {
+          id: variable.jobId,
         },
         data: {
           variables: {
