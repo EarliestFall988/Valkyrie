@@ -91,7 +91,7 @@ export const jobsRouter = createTRPCRouter({
         id: z.string(),
         title: z.string().min(3).max(100),
         description: z.string().max(255).optional(),
-        jobData: z.string(),
+        jobData: z.string()
       })
     )
     .mutation(async ({ ctx, input }) => {

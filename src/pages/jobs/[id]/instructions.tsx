@@ -1,4 +1,5 @@
 import {
+  ArrowPathIcon,
   CloudArrowUpIcon,
   ExclamationTriangleIcon,
   SignalIcon,
@@ -29,7 +30,7 @@ const JobPage: NextPage = () => {
 
   const [customFunctions, setCustomFunctions] = useState<CustomFunction[]>([]);
   const [variables, setVariables] = useState<Variables[]>([]);
-  const [jobHasLoaded, setJobHasLoaded] = useState(false);
+  const [instructionSetLoaded, setJobHasLoaded] = useState(false);
 
   const {
     data: job,
@@ -39,19 +40,23 @@ const JobPage: NextPage = () => {
     id: jobId,
   });
 
-  const { mutate: updateJob } = api.jobs.updateJob.useMutation({
-    onSuccess: () => {
-      console.log("success");
-    },
-    onError: (error) => {
-      console.log("err", error);
-    },
-  });
+  const { mutate: updateJob, isLoading: saving } =
+    api.jobs.updateJob.useMutation({
+      onSuccess: () => {
+        console.log("success");
+      },
+      onError: (error) => {
+        console.log("err", error);
+      },
+    });
 
   useMemo(() => {
+
+    console.log(job);
+
     if (job === undefined || job === null) return;
 
-    if (jobHasLoaded) return;
+    if (instructionSetLoaded) return;
 
     const reactflowinstance = job.data;
 
@@ -62,11 +67,11 @@ const JobPage: NextPage = () => {
     setCustomFunctions(job.customFunctions);
     setVariables(job.variables);
     setJobHasLoaded(true);
-  }, [job, jobHasLoaded]);
+  }, [job, instructionSetLoaded]);
 
   if (typeof id !== "string") return null;
 
-  const saveBot = () => {
+  const saveInstructions = () => {
     if (job === null || job === undefined) return;
 
     updateJob({
@@ -80,13 +85,14 @@ const JobPage: NextPage = () => {
   return (
     <div className="h-[100vh] w-full">
       <Ribbon
-        save={saveBot}
+        save={saveInstructions}
         job={job}
         errorLoading={isError}
         loading={isLoading}
+        saving={saving}
       />
       <KeyBindings />
-      <Flow id={id} />
+      <Flow id={id} vars={variables} setVars={setVariables} />
     </div>
   );
 };
@@ -98,7 +104,8 @@ const Ribbon: React.FC<{
   errorLoading: boolean;
   loading: boolean;
   save: () => void;
-}> = ({ job, errorLoading, loading, save }) => {
+  saving: boolean;
+}> = ({ job, errorLoading, loading, save, saving }) => {
   return (
     <div className="fixed top-0 z-20 flex w-full gap-2 border-b border-neutral-700 bg-neutral-800 p-2">
       <BackButtonComponent fallbackRoute="/dashboard" />
@@ -144,10 +151,20 @@ const Ribbon: React.FC<{
                     side="top"
                   >
                     <button
-                      onClick={save}
-                      className="flex gap-1 rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-neutral-600 focus:bg-neutral-600"
+                      onClick={() => {
+                        if (!saving) save();
+                      }}
+                      className={`flex gap-1 rounded ${
+                        saving
+                          ? ""
+                          : "bg-neutral-700 hover:scale-105 hover:bg-neutral-600 focus:bg-neutral-600"
+                      }  p-1 transition duration-100 `}
                     >
-                      <CloudArrowUpIcon className="h-6 w-6" />
+                      {saving ? (
+                        <ArrowPathIcon className="h-6 w-6 animate-spin" />
+                      ) : (
+                        <CloudArrowUpIcon className="h-6 w-6" />
+                      )}
                     </button>
                   </TooltipComponent>
                 </div>

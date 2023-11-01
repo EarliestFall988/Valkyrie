@@ -17,6 +17,7 @@ import {
   useRef,
   useState,
   useMemo,
+  type SetStateAction,
 } from "react";
 import {
   ReactFlow,
@@ -91,7 +92,11 @@ type nodeData = {
   label: string;
 };
 
-export const Flow = (props: { id: string }) => {
+export const Flow: React.FC<{
+  id: string;
+  vars: Variables[];
+  setVars: (value: SetStateAction<Variables[]>) => void;
+}> = ({ id, vars: variables, setVars: setVariables }) => {
   const nodeTypes = useMemo(
     () => ({
       variable: VariableNode,
@@ -101,7 +106,7 @@ export const Flow = (props: { id: string }) => {
     []
   );
 
-  const [variables, setVariables] = useState<Variables[]>([]);
+  // const [variables, setVariables] = useState<Variables[]>([]);
 
   const setNewVariable = () => {
     setVariables((variables) => [
@@ -110,7 +115,7 @@ export const Flow = (props: { id: string }) => {
         id: getId(),
         name: "new variable (" + variables.length + ")",
         type: "text",
-        jobId: props.id,
+        jobId: id,
         description: "",
         required: true,
         default: "",
@@ -120,7 +125,7 @@ export const Flow = (props: { id: string }) => {
     ]);
   };
 
-  const { data } = api.jobs.getJobById.useQuery({ id: props.id });
+  const { data } = api.jobs.getJobById.useQuery({ id: id });
 
   useEffect(() => {
     if (data === undefined || data === null) return;
@@ -140,6 +145,8 @@ export const Flow = (props: { id: string }) => {
     );
   }, []);
 
+  const DeleteVariable = (id: string) => setVariables((variables) => variables.filter((v) => v.id !== id));
+  
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
@@ -250,8 +257,11 @@ export const Flow = (props: { id: string }) => {
         setNewVar={setNewVariable}
         updateVar={updateVar}
         vars={variables}
+        deleteVar={(id) => {
+          DeleteVariable(id);
+        }}
       />
-      <CustomFunctionSideBar id={props.id} />
+      <CustomFunctionSideBar id={id} />
     </ReactFlowProvider>
   );
 };
@@ -260,7 +270,8 @@ const VariablesPanel: React.FC<{
   vars?: Variables[];
   setNewVar: () => void;
   updateVar: (v: Variables) => void;
-}> = ({ vars, setNewVar, updateVar }) => {
+  deleteVar: (id: string) => void;
+}> = ({ vars, setNewVar, updateVar, deleteVar }) => {
   const [open, setOpen] = useState(true);
 
   const testVars = [] as Variables[];
@@ -304,7 +315,14 @@ const VariablesPanel: React.FC<{
               <>
                 <div className="mt-8 max-h-[70vh] overflow-y-auto overflow-x-clip">
                   {vars?.map((v) => (
-                    <VariableItem updateVar={updateVar} v={v} key={v.id} />
+                    <VariableItem
+                      updateVar={updateVar}
+                      deleteVar={(id) => {
+                        deleteVar(id);
+                      }}
+                      v={v}
+                      key={v.id}
+                    />
                   ))}
                 </div>
               </>
@@ -322,7 +340,11 @@ const VariablesPanel: React.FC<{
       )}
       {!open && (
         <div>
-          <TooltipComponent content="Variables" description="Define and drag/drop variables from this panel here." side="right">
+          <TooltipComponent
+            content="Variables"
+            description="Define and drag/drop variables from this panel here."
+            side="right"
+          >
             <button
               onClick={() => {
                 setOpen(true);
@@ -350,7 +372,8 @@ export type varMetaDataType = {
 const VariableItem: React.FC<{
   v: Variables;
   updateVar: (v: Variables) => void;
-}> = ({ v, updateVar }) => {
+  deleteVar: (id: string) => void;
+}> = ({ v, updateVar, deleteVar }) => {
   const [open, setOpen] = useState(false);
 
   const [animationParent] = useAutoAnimate();
@@ -498,7 +521,12 @@ const VariableItem: React.FC<{
           </div>
           <div className="flex w-full flex-col gap-2 rounded border border-dashed border-red-900 p-2">
             <p className="font-semibold">Danger Zone</p>
-            <button className="flex items-center justify-center gap-2 rounded bg-red-700 p-1 transition duration-100 hover:bg-red-600">
+            <button
+              onClick={() => {
+                deleteVar(v.id);
+              }}
+              className="flex items-center justify-center gap-2 rounded bg-red-700 p-1 transition duration-100 hover:bg-red-600"
+            >
               <TrashIcon className="h-6 w-6" />
               <p className="font-semibold">Delete</p>
             </button>
@@ -540,7 +568,11 @@ const CustomFunctionSideBar = (props: { id: string }) => {
     <>
       <div className="fixed right-0 top-20 z-10 flex select-none flex-col gap-1 overflow-auto rounded-l border-y border-l border-neutral-700 bg-neutral-800 transition duration-100">
         <div className="flex w-full items-center justify-end">
-          <TooltipComponent content="Functions" description="Define and drag/drop from this panel here." side="right">
+          <TooltipComponent
+            content="Functions"
+            description="Define and drag/drop from this panel here."
+            side="right"
+          >
             <button
               onClick={() => {
                 setOpen(!open);
