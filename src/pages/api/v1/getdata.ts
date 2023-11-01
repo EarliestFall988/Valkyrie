@@ -7,7 +7,7 @@ type ContentRequestType = {
 
 const id = "some id"; //TODO: put this in the env file
 
-const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
+const ContentRoute = (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method !== "POST") {
     res.status(405).json({ message: "Method not allowed" });
     return;
