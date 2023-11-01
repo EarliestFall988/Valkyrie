@@ -1,29 +1,48 @@
 import {
+  ArrowDownOnSquareIcon,
   ArrowPathIcon,
+  ArrowUpOnSquareIcon,
   CloudArrowUpIcon,
   CodeBracketIcon,
+  CpuChipIcon,
   ExclamationTriangleIcon,
+  IdentificationIcon,
   SignalIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { type CustomFunction, type Variables, type Job } from "@prisma/client";
+import type {
+  CustomFunction,
+  Variables,
+  Job,
+  Parameters,
+} from "@prisma/client";
 import { type NextPage } from "next";
 import { useRouter } from "next/router";
 
 import "reactflow/dist/style.css";
 import { LoadingSmall } from "~/components/loading";
 import { api } from "~/utils/api";
-import { Flow, getId, varMetaDataType } from "~/flow/flow";
+import { Flow, getId, type varMetaDataType } from "~/flow/flow";
 import { BackButtonComponent } from "~/components/backButton";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type FC,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import Link from "next/link";
 import { TooltipComponent } from "~/components/tooltip";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
+  ChevronRightIcon,
   PlusIcon,
   TrashIcon,
 } from "@radix-ui/react-icons";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import * as Dialog from "@radix-ui/react-dialog";
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -89,6 +108,11 @@ const JobPage: NextPage = () => {
 
     if (instructionSetLoaded) return;
 
+
+    console.log("job", job);
+
+    console.log("job data", job.data);
+
     // const reactflowinstance = job.data;
 
     // if (!reactflowinstance) return;
@@ -98,7 +122,7 @@ const JobPage: NextPage = () => {
     setCustomFunctions(job.customFunctions);
     setVariables(job.variables);
     setInstructionSetLoaded(true);
-  }, [job]);
+  }, [job, instructionSetLoaded]);
 
   const updateVar = useCallback((v: Variables) => {
     setVariables((variables) =>
@@ -185,6 +209,7 @@ const JobPage: NextPage = () => {
         }}
         loadingVars={!instructionSetLoaded}
       />
+      <CustomFunctionSideBar id={id} />
     </div>
   );
 };
@@ -310,7 +335,7 @@ const VariablesPanel: React.FC<{
 
   return (
     <div
-    ref={animationParent}
+      ref={animationParent}
       className={`fixed left-0 top-20 z-10 flex ${
         open ? "w-80" : "p-1"
       }   rounded-r border-y border-r border-neutral-700 bg-neutral-800 transition duration-100`}
@@ -360,7 +385,7 @@ const VariablesPanel: React.FC<{
         </div>
       )}
       {open && loadingVars && (
-        <div className="flex h-[2em] gap-2 w-full items-center justify-center">
+        <div className="flex h-[2em] w-full items-center justify-center gap-2">
           <button
             onClick={() => {
               setOpen(false);
@@ -370,7 +395,9 @@ const VariablesPanel: React.FC<{
             <ChevronLeftIcon className="h-6 w-6" />
           </button>
           <ArrowPathIcon className="h-4 w-4 animate-spin" />
-          <div className="font-mono text-sm animate-pulse">Loading Variables...</div>
+          <div className="animate-pulse font-mono text-sm">
+            Loading Variables...
+          </div>
         </div>
       )}
 
@@ -560,6 +587,417 @@ const VariableItem: React.FC<{
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+const CustomFunctionSideBar = (props: { id: string }) => {
+  const onDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    f: CustomFunction & { parameters: Parameters[] }
+  ) => {
+    const data = JSON.stringify({
+      id: f.id,
+      nodeType: "customFunction",
+      label: f.name,
+      description: f.description,
+      parameters: f.parameters,
+    });
+
+    event.dataTransfer.setData("application/reactflow", data);
+    event.dataTransfer.effectAllowed = "move";
+  };
+
+  const { data: customFunctions } = api.functions.getFunctionsByJobId.useQuery({
+    jobId: props.id,
+  });
+
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <div className="fixed right-0 top-20 z-10 flex select-none flex-col gap-1 overflow-auto rounded-l border-y border-l border-neutral-700 bg-neutral-800 transition duration-100">
+        <div className="flex w-full items-center justify-end">
+          <TooltipComponent
+            content="Functions"
+            description="Define and drag/drop from this panel here."
+            side="right"
+          >
+            <button
+              onClick={() => {
+                setOpen(!open);
+              }}
+              className="p-2"
+            >
+              {!open && <CpuChipIcon className="h-6 w-6" />}
+              {open && (
+                <div>
+                  <ChevronRightIcon className="h-6 w-6" />
+                </div>
+              )}
+            </button>
+          </TooltipComponent>
+        </div>
+        {open && (
+          <div className="rounded-b rounded-t border-x border-neutral-600 ">
+            <p className="w-full rounded-t bg-neutral-600 text-center">
+              Functions
+            </p>
+            <div className="w-full  border-b border-neutral-600 p-1 font-semibold">
+              <NewFunctionDialog jobId={props.id}>
+                <div className="flex w-full items-center justify-start gap-2 rounded bg-gray-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-gray-500 focus:bg-gray-500">
+                  <PlusIcon className="h-4 w-4" />
+                  <p>New Function</p>
+                </div>
+              </NewFunctionDialog>
+            </div>
+            {customFunctions?.map((f) => (
+              <div
+                key={f.id}
+                draggable={true}
+                onDragStart={(event) => onDragStart(event, f)}
+                className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <CodeBracketIcon className="h-6 w-6" />
+                  <div>
+                    <p className="font-semibold">{f.name}</p>
+                    <p>{f.description}</p>
+                  </div>
+                </div>
+                <div className="">{f.parameters.length} param(s)</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+export type parameterType = {
+  name: string;
+  type: "text" | "integer" | "decimal" | "boolean";
+  io: "input" | "output";
+};
+
+const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
+  children,
+  jobId,
+}) => {
+  const [functionName, setFunctionName] = useState("");
+  const [functionDetails, setFunctionDetails] = useState("");
+  const [params, setParams] = useState<parameterType[]>([]);
+  const [OutParams, setOutParams] = useState<parameterType[]>([]);
+
+  const [animationParent] = useAutoAnimate();
+
+  const newParameter = () => {
+    setParams((params) => [...params, { name: "", type: "text", io: "input" }]);
+  };
+
+  const newOutParameter = () => {
+    setOutParams((params) => [
+      ...params,
+      { name: "", type: "text", io: "output" },
+    ]);
+  };
+
+  const deleteParameter = useCallback((id: number) => {
+    setParams((params) => params.filter((p, index) => index !== id));
+  }, []);
+
+  const deleteOutParameter = useCallback((id: number) => {
+    setOutParams((params) => params.filter((p, index) => index !== id));
+  }, []);
+
+  const context = api.useContext().functions;
+
+  const { mutate } = api.functions.createFunction.useMutation({
+    onSuccess: () => {
+      console.log("Function Created");
+      void context.invalidate();
+    },
+    onError: () => {
+      console.log("Error Creating Function");
+    },
+  });
+
+  const SaveFunction = useCallback(() => {
+    if (jobId === undefined || jobId === null || jobId === "") {
+      console.log("No Job ID");
+      return;
+    }
+
+    const parameters = params.map((p) => ({
+      name: p.name,
+      type: p.type,
+      io: p.io,
+    }));
+
+    parameters.push(
+      ...OutParams.map((p) => ({
+        name: p.name,
+        type: p.type,
+        io: p.io,
+      }))
+    );
+
+    mutate({
+      name: functionName,
+      description: functionDetails,
+      params: parameters.map((p) => ({
+        name: p.name,
+        type: p.type,
+        io: p.io,
+      })),
+      jobId: jobId,
+    });
+  }, [functionDetails, functionName, jobId, mutate, params, OutParams]);
+
+  const UpdateParameter = useCallback(
+    (
+      id: number,
+      name: string,
+      type: "text" | "integer" | "decimal" | "boolean",
+      io: string
+    ) => {
+      console.log("updating parameter");
+
+      if (io === "input" && id < params.length) {
+        setParams((params) =>
+          params.map((p, index) => {
+            if (index === id) {
+              return { name, type, io };
+            }
+            return p;
+          })
+        );
+      }
+
+      if (io === "output" && id < OutParams.length) {
+        setOutParams((params) =>
+          params.map((p, index) => {
+            if (index === id) {
+              return { name, type, io };
+            }
+            return p;
+          })
+        );
+      }
+    },
+    [OutParams.length, params.length]
+  );
+
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger asChild>{children}</Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="data-[state=open]:animate-overlayShow fixed inset-0 top-0 z-30 backdrop-blur-lg md:bg-black/20" />
+        <Dialog.Content className="data-[state=open]:animate-contentShow fixed left-[50%] top-[50%] z-30 max-h-[85vh] w-[90vw] max-w-[500px] translate-x-[-50%] translate-y-[-50%] rounded-[6px] border border-neutral-700 bg-black p-[25px] focus:outline-none">
+          <div className="pb-5">
+            <Dialog.Title className="flex select-none items-center justify-start gap-2 text-3xl font-semibold text-zinc-200">
+              New Function
+            </Dialog.Title>
+            <Dialog.Description className="text-md select-none tracking-tight text-neutral-300">
+              Create a new function here. Give it a name, and create parameters
+              for it.{" "}
+              <b>
+                Be sure the name matches the function name in the code and that
+                the parameter names also match.
+              </b>
+            </Dialog.Description>
+          </div>
+          <div className="border-b border-neutral-700 py-1">
+            <div className="flex items-center gap-2 text-2xl font-semibold">
+              <IdentificationIcon className="h-6 w-6 translate-y-[3px]" />
+              <p>Identity</p>
+            </div>
+            <div className="p-1">
+              <p className="font-lg font-semibold text-neutral-200">Name</p>
+              <input
+                type="text"
+                className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+                value={functionName}
+                onChange={(e) => {
+                  setFunctionName(e.target.value);
+                }}
+                placeholder="Be sure to name the function exactly as it is in the code..."
+                autoFocus
+              />
+            </div>
+            <div className="p-1">
+              <p className="font-lg font-semibold text-neutral-200">
+                Description
+              </p>
+              <textarea
+                className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+                value={functionDetails}
+                onChange={(e) => {
+                  setFunctionDetails(e.target.value);
+                }}
+                placeholder="Details to help you remember what this function does..."
+              />
+            </div>
+          </div>
+          <div className="max-h-[30vh] overflow-auto border-b border-neutral-700 py-1">
+            <div className="flex items-center gap-2 text-2xl font-semibold">
+              <ArrowDownOnSquareIcon className="h-6 w-6 translate-y-[3px]" />
+              <p>Input Parameters</p>
+            </div>
+            <div ref={animationParent} className="p-1">
+              {params.map((p, index) => (
+                <Parameter
+                  key={index}
+                  paramId={index.toString()}
+                  deleteParameter={deleteParameter}
+                  name={p.name}
+                  type={p.type}
+                  io={p.io}
+                  textOut={(id, name, type, io) => {
+                    UpdateParameter(id, name, type, io);
+                  }}
+                />
+              ))}
+            </div>
+            <button
+              onClick={newParameter}
+              className="flex w-full items-center justify-center gap-2 rounded bg-neutral-700 p-1"
+            >
+              <PlusIcon className="h-4 w-4" />
+              <p>Add Parameter</p>
+            </button>
+          </div>
+          <div className="max-h-[30vh] overflow-auto border-b border-neutral-700 py-1">
+            <div className="flex items-center justify-start gap-2 text-2xl font-semibold">
+              <ArrowUpOnSquareIcon className="h-6 w-6 translate-y-[3px]" />
+              <p>Output Parameters</p>
+            </div>
+            <div ref={animationParent} className="p-1">
+              {OutParams.map((p, index) => (
+                <Parameter
+                  key={index}
+                  paramId={index.toString()}
+                  deleteParameter={deleteOutParameter}
+                  name={p.name}
+                  type={p.type}
+                  io={p.io}
+                  textOut={(id, name, type, io) => {
+                    UpdateParameter(id, name, type, io);
+                  }}
+                />
+              ))}
+            </div>
+            <button
+              onClick={newOutParameter}
+              className="flex w-full items-center justify-center gap-2 rounded bg-neutral-700 p-1"
+            >
+              <PlusIcon className="h-4 w-4" />
+              <p>Add Parameter</p>
+            </button>
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-5">
+            <Dialog.Close asChild>
+              <div className="flex w-32 items-center justify-center gap-2 rounded bg-neutral-700 p-2 font-semibold outline-none hover:bg-neutral-600 focus:bg-neutral-600">
+                <XMarkIcon className="h-5 w-5" />
+                <p>Cancel</p>
+              </div>
+            </Dialog.Close>
+            <Dialog.Close asChild>
+              <button
+                onClick={() => {
+                  SaveFunction();
+                }}
+                className="flex w-32 items-center justify-center gap-2 rounded bg-purple-700 p-2 font-semibold outline-none hover:bg-purple-600 focus:bg-purple-600"
+              >
+                <CloudArrowUpIcon className="h-5 w-5" />
+                <p>Save</p>
+              </button>
+            </Dialog.Close>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+};
+
+export const Parameter: FC<{
+  name: string;
+  paramId: string;
+  type: string;
+  io: string;
+  textOut: (
+    id: number,
+    name: string,
+    type: "text" | "integer" | "decimal" | "boolean",
+    io: string
+  ) => void;
+  deleteParameter: (e: number) => void;
+}> = ({ name, type, io, paramId, deleteParameter, textOut }) => {
+  const [parameterName, setParameterName] = useState("");
+  const [parameterType, setParameterType] = useState<
+    "text" | "integer" | "decimal" | "boolean"
+  >("text");
+
+  const [parameterIO, setParameterIO] = useState<"input" | "output">("input");
+
+  useEffect(() => {
+    setParameterName(name);
+    setParameterType(type as "text" | "integer" | "decimal" | "boolean");
+    setParameterIO(io as "input" | "output");
+  }, [name, type, io]);
+
+  const deleteParam = () => {
+    deleteParameter(parseInt(paramId));
+  };
+
+  useEffect(() => {
+    textOut(parseInt(paramId), parameterName, parameterType, parameterIO);
+  }, [paramId, parameterName, parameterType, parameterIO, textOut]);
+
+  return (
+    <div className="mb-2 flex flex-col gap-2">
+      <div className="flex items-center justify-center gap-2">
+        <div className="w-full pb-1">
+          {/* <p className="font-lg font-semibold text-neutral-200">Parameter Name</p> */}
+          <input
+            type="text"
+            className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+            value={parameterName}
+            onChange={(e) => {
+              setParameterName(e.target.value);
+            }}
+            placeholder="Parameter Name"
+          />
+        </div>
+
+        <div className="w-1/2 pb-1">
+          {/* <p className="font-lg font-semibold text-neutral-200">
+            Parameter Type
+          </p> */}
+          <select
+            value={parameterType}
+            onChange={(e) => {
+              setParameterType(
+                e.target.value as "text" | "integer" | "decimal" | "boolean"
+              );
+            }}
+            className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+          >
+            <option value="text">Text</option>
+            <option value="integer">Integer</option>
+            <option value="decimal">Decimal</option>
+            <option value="boolean">Boolean</option>
+          </select>
+        </div>
+
+        <button
+          onClick={deleteParam}
+          className="rounded p-1 text-red-500 hover:bg-neutral-700 focus:bg-neutral-700"
+        >
+          <TrashIcon className="h-5 w-5" />
+        </button>
+      </div>
     </div>
   );
 };
