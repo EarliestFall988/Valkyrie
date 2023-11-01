@@ -46,6 +46,11 @@ const useFlowState = create<ReactFlowInstanceState>((set, get) => ({
       nodes: [...get().nodes, node],
     });
   },
+  appendEdge: (edge: Edge) => {
+    set({
+      edges: [...get().edges, edge],
+    });
+  },
 }));
 
 export default useFlowState;

@@ -1,12 +1,5 @@
-import {
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
-import {
-  useCallback,
-  useRef,
-  useState,
-  useMemo,
-} from "react";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { useCallback, useRef, useState, useMemo, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -20,19 +13,18 @@ import {
   type OnConnect,
   type Edge,
   type Node,
+  Connection,
 } from "reactflow";
 import { ResultNode } from "~/nodes/resultNode";
 import { VariableNode } from "~/nodes/variableNode";
 
 import useFlowState from "./state";
 import { shallow } from "zustand/shallow";
-import {
-} from "@prisma/client";
+import {} from "@prisma/client";
 import { CustomFunction as CustomFunctionNode } from "~/nodes/customFunctionNode";
 import type { parameterType } from "~/pages/jobs/[id]/instructions";
 
-
-const selector = (state: {
+export const selector = (state: {
   nodes: Node[];
   edges: Edge[];
   onNodesChange: OnNodesChange;
@@ -73,7 +65,8 @@ type nodeData = {
 export const Flow: React.FC<{
   id: string;
   loadingData: boolean;
-}> = ({ id, loadingData }) => {
+  flowData: string;
+}> = ({ id, loadingData, flowData }) => {
   const nodeTypes = useMemo(
     () => ({
       variable: VariableNode,
@@ -83,13 +76,36 @@ export const Flow: React.FC<{
     []
   );
 
+  const { nodes, edges, appendNode, onNodesChange, onEdgesChange, onConnect } =
+    useFlowState(selector, shallow);
+
+  useEffect(() => {
+    if (flowData === "" || flowData === null || flowData === undefined) return;
+
+    const newData = JSON.parse(flowData) as { nodes: Node[]; edges: Edge[] };
+    // console.log("react flow data result", newData);
+
+    newData.nodes.forEach((node) => {
+      appendNode(node);
+    });
+
+    const connection = newData.edges.map((edge) => {
+      return {
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.sourceHandle,
+        targetHandle: edge.targetHandle,
+      } as Connection;
+    });
+
+    connection.forEach((conn) => {
+      onConnect(conn);
+    });
+  }, [flowData, appendNode, onConnect, edges]);
 
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
-
-  const { nodes, edges, appendNode, onNodesChange, onEdgesChange, onConnect } =
-    useFlowState(selector, shallow);
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -157,7 +173,7 @@ export const Flow: React.FC<{
 
   if (loadingData) {
     return (
-      <div className="flex h-screen w-screen items-center text-2xl font-mono font-semibold text-purple-600 justify-center gap-2">
+      <div className="flex h-screen w-screen items-center justify-center gap-2 font-mono text-2xl font-semibold text-purple-600">
         <ArrowPathIcon className="h-6 w-6 animate-spin" />
         Loading...
       </div>
@@ -199,8 +215,6 @@ export const Flow: React.FC<{
           <Controls />
         </ReactFlow>
       </div>
-
-     
     </ReactFlowProvider>
   );
 };
@@ -217,4 +231,3 @@ export type varMetaDataType = {
 export type functionMetaData = nodeData & {
   parameters: parameterType[];
 };
-

@@ -22,7 +22,7 @@ import { useRouter } from "next/router";
 import "reactflow/dist/style.css";
 import { LoadingSmall } from "~/components/loading";
 import { api } from "~/utils/api";
-import { Flow, getId, type varMetaDataType } from "~/flow/flow";
+import { Flow, getId, selector, type varMetaDataType } from "~/flow/flow";
 import { BackButtonComponent } from "~/components/backButton";
 import {
   type FC,
@@ -43,6 +43,8 @@ import {
 } from "@radix-ui/react-icons";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import * as Dialog from "@radix-ui/react-dialog";
+import useFlowState from "~/flow/state";
+import { shallow } from "zustand/shallow";
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -55,7 +57,7 @@ const JobPage: NextPage = () => {
     jobId = id;
   }
 
-  const [customFunctions, setCustomFunctions] = useState<CustomFunction[]>([]);
+  // const [customFunctions, setCustomFunctions] = useState<CustomFunction[]>([]);
   const [variables, setVariables] = useState<Variables[]>([]);
   const [instructionSetLoaded, setInstructionSetLoaded] = useState(false);
 
@@ -66,6 +68,8 @@ const JobPage: NextPage = () => {
   } = api.jobs.getJobById.useQuery({
     id: jobId,
   });
+
+  const { nodes, edges } = useFlowState(selector, shallow);
 
   const { mutate: updateJob, isLoading: saving } =
     api.jobs.updateJob.useMutation({
@@ -108,10 +112,9 @@ const JobPage: NextPage = () => {
 
     if (instructionSetLoaded) return;
 
+    // console.log("job", job);
 
-    console.log("job", job);
-
-    console.log("job data", job.data);
+    // console.log("job data", job.data);
 
     // const reactflowinstance = job.data;
 
@@ -119,7 +122,7 @@ const JobPage: NextPage = () => {
 
     // console.log("job data", reactflowinstance);
 
-    setCustomFunctions(job.customFunctions);
+    // setCustomFunctions(job.customFunctions);
     setVariables(job.variables);
     setInstructionSetLoaded(true);
   }, [job, instructionSetLoaded]);
@@ -155,9 +158,7 @@ const JobPage: NextPage = () => {
     }
   };
 
-  if (typeof id !== "string") return null;
-
-  const saveInstructions = () => {
+  const saveInstructions = useCallback(() => {
     if (job === null || job === undefined) return;
 
     upsertVariables(
@@ -173,21 +174,32 @@ const JobPage: NextPage = () => {
       })
     );
 
+    const newData = {
+      nodes,
+      edges,
+    };
+
+    const final = JSON.stringify(newData);
+
+    console.log(final);
+
     updateJob({
       id: jobId,
       title: job.title,
       description: job.description ?? undefined,
-      jobData: job.data,
+      jobData: final,
     });
-  };
+  }, [edges, jobId, job, nodes, updateJob, upsertVariables, variables]);
 
-  const DeleteVariable = (id: string) => {
+  const DeleteVariable = useCallback((id: string) => {
     setVariables(variables.filter((v) => v.id !== id));
 
     deleteVariable({
       id: id,
     });
-  };
+  },[deleteVariable, variables]);
+
+  if (typeof id !== "string") return null;
 
   return (
     <div className="h-[100vh] w-full">
@@ -199,7 +211,11 @@ const JobPage: NextPage = () => {
         saving={saving || savingVariables || deletingVariable}
       />
       <KeyBindings />
-      <Flow id={id} loadingData={!instructionSetLoaded} />
+      <Flow
+        id={id}
+        loadingData={!instructionSetLoaded}
+        flowData={job?.data ?? ""}
+      />
       <VariablesPanel
         setNewVar={setNewVariable}
         updateVar={updateVar}
