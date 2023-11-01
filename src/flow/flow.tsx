@@ -89,19 +89,19 @@ export const Flow: React.FC<{
       appendNode(node);
     });
 
-    const connection = newData.edges.map((edge) => {
+    const connection = newData.edges.map((e) => {
       return {
-        source: edge.source,
-        target: edge.target,
-        sourceHandle: edge.sourceHandle,
-        targetHandle: edge.targetHandle,
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle,
+        targetHandle: e.targetHandle,
       } as Connection;
     });
 
     connection.forEach((conn) => {
       onConnect(conn);
     });
-  }, [flowData, appendNode, onConnect, edges]);
+  }, [flowData, appendNode, onConnect]);
 
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const [reactFlowInstance, setReactFlowInstance] =

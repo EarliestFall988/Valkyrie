@@ -45,6 +45,7 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import * as Dialog from "@radix-ui/react-dialog";
 import useFlowState from "~/flow/state";
 import { shallow } from "zustand/shallow";
+import Head from "next/head";
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -191,42 +192,61 @@ const JobPage: NextPage = () => {
     });
   }, [edges, jobId, job, nodes, updateJob, upsertVariables, variables]);
 
-  const DeleteVariable = useCallback((id: string) => {
-    setVariables(variables.filter((v) => v.id !== id));
+  const DeleteVariable = useCallback(
+    (id: string) => {
+      setVariables(variables.filter((v) => v.id !== id));
 
-    deleteVariable({
-      id: id,
-    });
-  },[deleteVariable, variables]);
+      deleteVariable({
+        id: id,
+      });
+    },
+    [deleteVariable, variables]
+  );
 
   if (typeof id !== "string") return null;
 
   return (
-    <div className="h-[100vh] w-full">
-      <Ribbon
-        save={saveInstructions}
-        job={job}
-        errorLoading={isError}
-        loading={isLoading}
-        saving={saving || savingVariables || deletingVariable}
-      />
-      <KeyBindings />
-      <Flow
-        id={id}
-        loadingData={!instructionSetLoaded}
-        flowData={job?.data ?? ""}
-      />
-      <VariablesPanel
-        setNewVar={setNewVariable}
-        updateVar={updateVar}
-        vars={variables}
-        deleteVar={(id) => {
-          DeleteVariable(id);
-        }}
-        loadingVars={!instructionSetLoaded}
-      />
-      <CustomFunctionSideBar id={id} />
-    </div>
+    <>
+      <Head>
+        <title>{`${
+          job
+            ? " Editing '" + job.title + "' Instruction Set - "
+            : !instructionSetLoaded
+            ? "Loading Instruction Set - "
+            : ""
+        } Valkyrie`}</title>
+        <meta
+          name="description"
+          content="Pull data by building digital workers"
+        />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      <div className="h-[100vh] w-full">
+        <Ribbon
+          save={saveInstructions}
+          job={job}
+          errorLoading={isError}
+          loading={isLoading}
+          saving={saving || savingVariables || deletingVariable}
+        />
+        <KeyBindings />
+        <Flow
+          id={id}
+          loadingData={!instructionSetLoaded}
+          flowData={job?.data ?? ""}
+        />
+        <VariablesPanel
+          setNewVar={setNewVariable}
+          updateVar={updateVar}
+          vars={variables}
+          deleteVar={(id) => {
+            DeleteVariable(id);
+          }}
+          loadingVars={!instructionSetLoaded}
+        />
+        <CustomFunctionSideBar id={id} />
+      </div>
+    </>
   );
 };
 
