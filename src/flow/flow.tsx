@@ -121,6 +121,7 @@ export const Flow: React.FC<{
         default: "",
         updatedAt: new Date(),
         createdAt: new Date(),
+        value: "",
       },
     ]);
   };
@@ -274,19 +275,19 @@ const VariablesPanel: React.FC<{
 }> = ({ vars, setNewVar, updateVar, deleteVar }) => {
   const [open, setOpen] = useState(true);
 
-  const testVars = [] as Variables[];
+  // const testVars = [] as Variables[];
 
-  testVars.push({
-    id: "1",
-    name: "test",
-    type: "text",
-    jobId: "1",
-    description: "test",
-    required: true,
-    default: "test",
-    updatedAt: new Date(),
-    createdAt: new Date(),
-  });
+  // testVars.push({
+  //   id: "1",
+  //   name: "test",
+  //   type: "text",
+  //   jobId: "1",
+  //   description: "test",
+  //   required: true,
+  //   default: "test",
+  //   updatedAt: new Date(),
+  //   createdAt: new Date(),
+  // });
 
   return (
     <div
