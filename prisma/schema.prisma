@@ -41,6 +41,7 @@ model Variables {
     type        String  @db.VarChar(255)
     required    Boolean @default(false)
     default     String? @db.VarChar(255)
+    value       String? @db.VarChar(255)
 
     jobId String
 

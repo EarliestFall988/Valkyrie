@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
-import { CustomFunction } from "~/nodes/customFunctionNode";
+// import { CustomFunction } from "~/nodes/customFunctionNode";
 
 export const jobsRouter = createTRPCRouter({
   createJob: privateProcedure

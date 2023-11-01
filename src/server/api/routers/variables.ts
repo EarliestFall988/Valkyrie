@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
 
-export const jobsRouter = createTRPCRouter({
+export const variablesRouter = createTRPCRouter({
   createVariable: privateProcedure
     .input(
       z.object({
@@ -10,6 +10,7 @@ export const jobsRouter = createTRPCRouter({
         type: z.string().min(3).max(100),
         jobId: z.string().min(3).max(100),
         required: z.boolean(),
+        value: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -20,6 +21,7 @@ export const jobsRouter = createTRPCRouter({
           type: input.type,
           jobId: input.jobId,
           required: input.required,
+          value: input.value,
           job: {
             connect: {
               id: input.jobId,
@@ -47,7 +49,7 @@ export const jobsRouter = createTRPCRouter({
       return variables;
     }),
 
-  UpdateVariable: privateProcedure
+  updateVariable: privateProcedure
     .input(
       z.object({
         id: z.string().min(3).max(100),
@@ -55,6 +57,7 @@ export const jobsRouter = createTRPCRouter({
         description: z.string().max(255).optional(),
         type: z.string().min(3).max(100),
         required: z.boolean(),
+        value: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -67,12 +70,55 @@ export const jobsRouter = createTRPCRouter({
           description: input.description,
           type: input.type,
           required: input.required,
+          value: input.value,
         },
       });
       return updatedVariable;
     }),
 
-  DeleteVariable: privateProcedure
+  upsertVariables: privateProcedure
+    .input(
+      z.array(
+        z.object({
+          id: z.string().min(3).max(100),
+          name: z.string().min(3).max(100),
+          description: z.string().max(255).optional(),
+          type: z.string().min(3).max(100),
+          jobId: z.string().min(3).max(100),
+          required: z.boolean(),
+          value: z.string().optional(),
+        })
+      )
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updatedVariables = await ctx.prisma.$transaction(
+        input.map((variable) => {
+          return ctx.prisma.variables.upsert({
+            where: {
+              id: variable.id,
+            },
+            update: {
+              name: variable.name,
+              description: variable.description,
+              type: variable.type,
+              required: variable.required,
+              value: variable.value,
+            },
+            create: {
+              name: variable.name,
+              description: variable.description,
+              type: variable.type,
+              jobId: variable.jobId,
+              required: variable.required,
+              value: variable.value,
+            },
+          });
+        })
+      );
+      return updatedVariables;
+    }),
+
+  deleteVariable: privateProcedure
     .input(
       z.object({
         id: z.string().min(3).max(100),

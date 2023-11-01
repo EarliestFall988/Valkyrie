@@ -50,8 +50,17 @@ const JobPage: NextPage = () => {
       },
     });
 
-  useMemo(() => {
+  const { mutate: upsertVariables, isLoading: savingVariables } =
+    api.variables.upsertVariables.useMutation({
+      onSuccess: () => {
+        console.log("success");
+      },
+      onError: (error) => {
+        console.log("err", error);
+      },
+    });
 
+  useMemo(() => {
     console.log(job);
 
     if (job === undefined || job === null) return;
@@ -74,6 +83,19 @@ const JobPage: NextPage = () => {
   const saveInstructions = () => {
     if (job === null || job === undefined) return;
 
+    upsertVariables(
+      variables.map((variable) => {
+        return {
+          id: variable.id,
+          name: variable.name,
+          type: variable.type,
+          jobId: variable.jobId,
+          required: variable.required,
+          value: variable.value ?? "",
+        };
+      })
+    );
+
     updateJob({
       id: jobId,
       title: job.title,
@@ -89,7 +111,7 @@ const JobPage: NextPage = () => {
         job={job}
         errorLoading={isError}
         loading={isLoading}
-        saving={saving}
+        saving={saving || savingVariables}
       />
       <KeyBindings />
       <Flow id={id} vars={variables} setVars={setVariables} />

@@ -1,8 +1,5 @@
-import { useCallback } from "react";
 import { Handle, Position } from "reactflow";
-import { TextIcon } from "@radix-ui/react-icons";
 import { api } from "~/utils/api";
-import { CodeBracketIcon } from "@heroicons/react/24/outline";
 import { type functionMetaData } from "~/flow/flow";
 
 const handleStyle = {

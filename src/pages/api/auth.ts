@@ -60,6 +60,8 @@ const apiRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     watchlist: [],
   };
 
+  console.log(user);
+
   const content = pusher.authorizeChannel(socketId, channelName);
 
   // const content = pusher.authenticateUser(socketId, user);
