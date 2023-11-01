@@ -175,7 +175,7 @@ const JobPage: NextPage = () => {
         saving={saving || savingVariables || deletingVariable}
       />
       <KeyBindings />
-      <Flow id={id} loadingData={false} />
+      <Flow id={id} loadingData={!instructionSetLoaded} />
       <VariablesPanel
         setNewVar={setNewVariable}
         updateVar={updateVar}
@@ -183,6 +183,7 @@ const JobPage: NextPage = () => {
         deleteVar={(id) => {
           DeleteVariable(id);
         }}
+        loadingVars={!instructionSetLoaded}
       />
     </div>
   );
@@ -285,8 +286,11 @@ const VariablesPanel: React.FC<{
   setNewVar: () => void;
   updateVar: (v: Variables) => void;
   deleteVar: (id: string) => void;
-}> = ({ vars, setNewVar, updateVar, deleteVar }) => {
+  loadingVars: boolean;
+}> = ({ vars, setNewVar, updateVar, deleteVar, loadingVars }) => {
   const [open, setOpen] = useState(true);
+
+  const [animationParent] = useAutoAnimate();
 
   // console.log("vars", vars);
 
@@ -306,11 +310,12 @@ const VariablesPanel: React.FC<{
 
   return (
     <div
+    ref={animationParent}
       className={`fixed left-0 top-20 z-10 flex ${
         open ? "w-80" : "p-1"
       }   rounded-r border-y border-r border-neutral-700 bg-neutral-800 transition duration-100`}
     >
-      {open && (
+      {open && !loadingVars && (
         <div className={` w-full `}>
           <button
             onClick={() => {
@@ -354,6 +359,21 @@ const VariablesPanel: React.FC<{
           </div>
         </div>
       )}
+      {open && loadingVars && (
+        <div className="flex h-[2em] gap-2 w-full items-center justify-center">
+          <button
+            onClick={() => {
+              setOpen(false);
+            }}
+            className="absolute left-1 top-1 rounded transition duration-200 hover:bg-neutral-500 "
+          >
+            <ChevronLeftIcon className="h-6 w-6" />
+          </button>
+          <ArrowPathIcon className="h-4 w-4 animate-spin" />
+          <div className="font-mono text-sm animate-pulse">Loading Variables...</div>
+        </div>
+      )}
+
       {!open && (
         <div>
           <TooltipComponent
