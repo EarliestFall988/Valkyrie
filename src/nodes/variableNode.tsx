@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Handle, Position } from "reactflow";
-import { TextIcon } from "@radix-ui/react-icons";
+// import { TextIcon } from "@radix-ui/react-icons";
 import { type varMetaDataType } from "~/flow/flow";
-import { ArchiveBoxIcon } from "@heroicons/react/24/solid";
+// import { ArchiveBoxIcon } from "@heroicons/react/24/solid";
 
-const handleStyle = { left: 10 };
+// const handleStyle = { left: 10 };
 
 type nodeData = {
   data: varMetaDataType;
@@ -21,9 +21,9 @@ export const VariableNode = (props: nodeData) => {
     | "decimal"
     | "boolean";
 
-  const onChange = useCallback((e: string) => {
-    console.log("VariableNode onChange", e);
-  }, []);
+  // const onChange = useCallback((e: string) => {
+  //   console.log("VariableNode onChange", e);
+  // }, []);
 
   useEffect(() => {
     if (dataType === "text") {

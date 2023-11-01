@@ -2,12 +2,12 @@ import { Handle, Position } from "reactflow";
 import { api } from "~/utils/api";
 import { type functionMetaData } from "~/flow/flow";
 
-const handleStyle = {
-  top: 10,
-  background: "#fff",
-  border: 0,
-  borderRadius: 0,
-};
+// const handleStyle = {
+//   top: 10,
+//   background: "#fff",
+//   border: 0,
+//   borderRadius: 0,
+// };
 
 type nodeData = {
   data: functionMetaData;
