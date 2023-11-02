@@ -26,9 +26,11 @@ export const CustomFunction = (props: nodeData) => {
 
   const parameters = data.parameters;
 
+  // console.log(parameters);
+
   const setParameterHandles = () => {
-    let leftIndex = 0;
-    let rightIndex = 0;
+    let leftIndex = 1;
+    let rightIndex = 1;
 
     const result = parameters.map((parameter) => {
       const leftTopLocation = leftIndex * 20 + 100;
@@ -36,36 +38,32 @@ export const CustomFunction = (props: nodeData) => {
 
       const rightTopLocation = rightIndex * 20 + 100;
       const rightWordLocation = rightIndex * 1.75 + 7.5;
-      
+
       let backgroundColor = "";
 
-      if(parameter.type === "text")
-      {
-        backgroundColor = "red"
+      if (parameter.type === "text") {
+        backgroundColor = "red";
       }
 
-      if(parameter.type === "integer")
-      {
-        backgroundColor = "blue"
+      if (parameter.type === "integer") {
+        backgroundColor = "blue";
       }
 
-      if(parameter.type === "boolean")
-      {
-        backgroundColor = "green"
+      if (parameter.type === "boolean") {
+        backgroundColor = "green";
       }
 
-      if(parameter.type === "decimal")
-      {
-        backgroundColor = "yellow"
+      if (parameter.type === "decimal") {
+        backgroundColor = "yellow";
       }
-
 
       if (parameter.io === "input") {
         const res = (
-          <>
+          <div key={parameter.id}>
             <div className={`top-[${leftWordLocation}em] fixed left-2 text-xs`}>
               {parameter.name}
             </div>
+
             <Handle
               key={parameter.id}
               type="target"
@@ -77,21 +75,20 @@ export const CustomFunction = (props: nodeData) => {
                 backgroundColor: backgroundColor,
               }}
             />
-          </>
+          </div>
         );
-
         leftIndex += 1;
         return res;
       } else {
         const res = (
-          <>
+          <div key={parameter.id}>
             <div
               className={`top-[${rightWordLocation}em] fixed right-2 text-xs`}
             >
               {parameter.name}
             </div>
             <Handle
-              key={parameter.id}
+              key={parameter.id + "out"}
               type="source"
               position={Position.Right}
               id={parameter.id}
@@ -101,7 +98,7 @@ export const CustomFunction = (props: nodeData) => {
                 backgroundColor: backgroundColor,
               }}
             />
-          </>
+          </div>
         );
 
         rightIndex += 1;
@@ -116,7 +113,7 @@ export const CustomFunction = (props: nodeData) => {
     <>
       {/* <Handle type="target" position={Position.Left} /> */}
 
-      <div className="flex h-48 w-80 items-start justify-center gap-2 rounded-lg p-2 bg-gray-700">
+      <div className="flex h-48 w-80 items-start justify-center gap-2 rounded-lg bg-gray-700 p-2">
         <div className="w-3/4">
           <div>
             <p className="text-lg font-semibold">{data.name}</p>
@@ -219,31 +216,6 @@ const LeftControlFlowHandles = () => {
           borderRadius: 0,
         }}
       />
-      {/* <div className="fixed left-2 top-[0.9rem] text-[0.5em]">{"0"}</div>
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="f0"
-        style={{
-          top: 20,
-          background: "#fff",
-          border: 0,
-          borderRadius: 0,
-        }}
-      /> */}
-
-      {/* <div className="fixed left-2 top-[1.5rem] text-[0.5em]">{"1"}</div>
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="f1"
-        style={{
-          top: 30,
-          background: "#fff",
-          border: 0,
-          borderRadius: 0,
-        }}
-      /> */}
     </>
   );
 };

@@ -657,22 +657,6 @@ const VariableItem: React.FC<{
 };
 
 const CustomFunctionSideBar = (props: { id: string }) => {
-  const onDragStart = (
-    event: React.DragEvent<HTMLDivElement>,
-    f: CustomFunction & { parameters: Parameters[] }
-  ) => {
-    const data = JSON.stringify({
-      id: f.id,
-      nodeType: "customFunction",
-      label: f.name,
-      description: f.description,
-      parameters: f.parameters,
-    });
-
-    event.dataTransfer.setData("application/reactflow", data);
-    event.dataTransfer.effectAllowed = "move";
-  };
-
   const { data: customFunctions } = api.functions.getFunctionsByJobId.useQuery({
     jobId: props.id,
   });
@@ -832,6 +816,7 @@ export type parameterType = {
   name: string;
   type: "text" | "integer" | "decimal" | "boolean";
   io: "input" | "output";
+  id: string;
 };
 
 const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
@@ -840,31 +825,38 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
 }) => {
   const [functionName, setFunctionName] = useState("");
   const [functionDetails, setFunctionDetails] = useState("");
-  const [params, setParams] = useState<parameterType[]>([]);
+  const [inParams, setInParams] = useState<parameterType[]>([]);
   const [OutParams, setOutParams] = useState<parameterType[]>([]);
 
   const [animationParent] = useAutoAnimate();
 
-  const newParameter = () => {
-    setParams((params) => [...params, { name: "", type: "text", io: "input" }]);
-  };
+  const newInParam = () => {
+    const id = getId();
 
-  const newOutParameter = () => {
-    setOutParams((params) => [
+    setInParams((params) => [
       ...params,
-      { name: "", type: "text", io: "output" },
+      { name: "", type: "text", io: "input", id },
     ]);
   };
 
-  const deleteParameter = useCallback((id: number) => {
-    setParams((params) => params.filter((p, index) => index !== id));
+  const newOutParameter = () => {
+    const id = getId();
+
+    setOutParams((params) => [
+      ...params,
+      { name: "", type: "text", io: "output", id },
+    ]);
+  };
+
+  const deleteInParameter = useCallback((id: string) => {
+    setInParams((params) => params.filter((p) => p.id !== id));
   }, []);
 
-  const deleteOutParameter = useCallback((id: number) => {
-    setOutParams((params) => params.filter((p, index) => index !== id));
+  const deleteOutParameter = useCallback((id: string) => {
+    setOutParams((params) => params.filter((p) => p.id !== id));
   }, []);
 
-  const context = api.useContext().functions;
+  const context = api.useContext();
 
   const { mutate } = api.functions.createFunction.useMutation({
     onSuccess: () => {
@@ -882,7 +874,7 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
       return;
     }
 
-    const parameters = params.map((p) => ({
+    const parameters = inParams.map((p) => ({
       name: p.name,
       type: p.type,
       io: p.io,
@@ -906,40 +898,40 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
       })),
       jobId: jobId,
     });
-  }, [functionDetails, functionName, jobId, mutate, params, OutParams]);
+  }, [functionDetails, functionName, jobId, mutate, inParams, OutParams]);
 
   const UpdateParameter = useCallback(
     (
-      id: number,
+      id: string,
       name: string,
       type: "text" | "integer" | "decimal" | "boolean",
       io: string
     ) => {
       console.log("updating parameter");
 
-      if (io === "input" && id < params.length) {
-        setParams((params) =>
-          params.map((p, index) => {
-            if (index === id) {
-              return { name, type, io };
+      if (io === "input") {
+        setInParams((params) =>
+          params.map((p) => {
+            if (p.id === id) {
+              return { name, type, io, id: p.id } as parameterType;
             }
             return p;
           })
         );
       }
 
-      if (io === "output" && id < OutParams.length) {
+      if (io === "output") {
         setOutParams((params) =>
-          params.map((p, index) => {
-            if (index === id) {
-              return { name, type, io };
+          params.map((p) => {
+            if (p.id === id) {
+              return { name, type, io, id: p.id } as parameterType;
             }
             return p;
           })
         );
       }
     },
-    [OutParams.length, params.length]
+    [setInParams, setOutParams]
   );
 
   return (
@@ -999,22 +991,22 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
               <p>Input Parameters</p>
             </div>
             <div ref={animationParent} className="p-1">
-              {params.map((p, index) => (
+              {inParams.map((p) => (
                 <Parameter
-                  key={index}
-                  paramId={index.toString()}
-                  deleteParameter={deleteParameter}
+                  key={p.id}
+                  deleteParameter={() => deleteInParameter(p.id)}
                   name={p.name}
                   type={p.type}
                   io={p.io}
+                  id={p.id}
                   textOut={(id, name, type, io) => {
-                    UpdateParameter(id, name, type, io);
+                    UpdateParameter(p.id, name, type, io);
                   }}
                 />
               ))}
             </div>
             <button
-              onClick={newParameter}
+              onClick={newInParam}
               className="flex w-full items-center justify-center gap-2 rounded bg-neutral-700 p-1"
             >
               <PlusIcon className="h-4 w-4" />
@@ -1027,16 +1019,16 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
               <p>Output Parameters</p>
             </div>
             <div ref={animationParent} className="p-1">
-              {OutParams.map((p, index) => (
+              {OutParams.map((p) => (
                 <Parameter
-                  key={index}
-                  paramId={index.toString()}
-                  deleteParameter={deleteOutParameter}
+                  key={p.id}
+                  deleteParameter={() => deleteOutParameter(p.id)}
                   name={p.name}
                   type={p.type}
                   io={p.io}
+                  id={p.id}
                   textOut={(id, name, type, io) => {
-                    UpdateParameter(id, name, type, io);
+                    UpdateParameter(p.id, name, type, io);
                   }}
                 />
               ))}
@@ -1076,17 +1068,17 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
 
 export const Parameter: FC<{
   name: string;
-  paramId: string;
   type: string;
   io: string;
+  id: string;
   textOut: (
-    id: number,
+    id: string,
     name: string,
     type: "text" | "integer" | "decimal" | "boolean",
     io: string
   ) => void;
-  deleteParameter: (e: number) => void;
-}> = ({ name, type, io, paramId, deleteParameter, textOut }) => {
+  deleteParameter: (e: string) => void;
+}> = ({ name, type, io, deleteParameter, textOut, id }) => {
   const [parameterName, setParameterName] = useState("");
   const [parameterType, setParameterType] = useState<
     "text" | "integer" | "decimal" | "boolean"
@@ -1101,12 +1093,12 @@ export const Parameter: FC<{
   }, [name, type, io]);
 
   const deleteParam = () => {
-    deleteParameter(parseInt(paramId));
+    deleteParameter(id);
   };
 
   useEffect(() => {
-    textOut(parseInt(paramId), parameterName, parameterType, parameterIO);
-  }, [paramId, parameterName, parameterType, parameterIO, textOut]);
+    textOut(id, parameterName, parameterType, parameterIO);
+  }, [parameterName, parameterType, parameterIO, textOut, id]);
 
   return (
     <div className="mb-2 flex flex-col gap-2">
