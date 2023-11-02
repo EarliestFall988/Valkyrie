@@ -19,7 +19,12 @@ export const BackButtonComponent = (props: {
     (fallbackRoute: string) => {
       if (window.history.length > 1) {
         if (!props.forceReload) back();
-        else window.location.reload();
+        else {
+          window.history.go(-1);
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }
         return;
       }
 

@@ -471,6 +471,7 @@ const VariableItem: React.FC<{
   const [description, setDescription] = useState(v.description ?? "");
   const [required, setRequired] = useState(v.required ?? false);
   const [type, setType] = useState(v.type ?? "text");
+  const [value, setValue] = useState(v.value ?? "");
 
   useEffect(() => {
     const newVar = {
@@ -479,10 +480,11 @@ const VariableItem: React.FC<{
       description,
       required,
       type,
+      value,
     };
 
     updateVar(newVar);
-  }, [name, description, required, type, v, updateVar]);
+  }, [name, description, required, type, v, updateVar, value]);
 
   useMemo(() => {
     if (v === undefined) return;
@@ -491,6 +493,22 @@ const VariableItem: React.FC<{
     setDescription(v.description ?? "");
     setRequired(v.required ?? false);
     setType(v.type ?? "text");
+
+    const value = v.value ?? "";
+
+    if (v.type === "text") setValue(value);
+
+    if (v.type === "decimal" || v.value === "integer") {
+      const num = parseFloat(value);
+
+      if (isNaN(num)) setValue("0");
+      else setValue(num.toString());
+    }
+
+    if (v.type === "boolean") {
+      if (!value || value === "") setValue("false");
+      setValue(v.value ?? "false");
+    }
   }, [v]);
 
   const onDragStart = (event: React.DragEvent<HTMLDivElement>) => {
@@ -498,9 +516,9 @@ const VariableItem: React.FC<{
       id: v.id,
       nodeType: "variable",
       label: v.name,
-      description: v.description,
       required: v.required,
       type: v.type,
+      value: v.value,
     } as varMetaDataType);
 
     event.dataTransfer.setData("application/reactflow", nodeData);
@@ -575,7 +593,19 @@ const VariableItem: React.FC<{
               type="text"
               className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
               value={description}
-              placeholder="Be sure to name the function exactly as it is in the code..."
+              placeholder=""
+            />
+          </div>
+          <div>
+            <p className="font-semibold">Value</p>
+            <input
+              onChange={(e) => {
+                setDescription(e.target.value);
+              }}
+              type="text"
+              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+              value={value}
+              placeholder=""
             />
           </div>
           <div>

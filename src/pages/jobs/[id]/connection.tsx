@@ -9,6 +9,8 @@ import { TooltipComponent } from "~/components/tooltip";
 const Connection: NextPage = () => {
   const router = useRouter();
 
+  const { id } = router.query as { id: string };
+
   const [code, setCode] = useState("");
   const [status, setStatus] = useState("searching");
   const [copied, setCopied] = useState(false);
@@ -56,8 +58,12 @@ const Connection: NextPage = () => {
               Paste this pin into your Device
             </p>
             <div className="flex w-full items-center justify-center gap-3">
-              <h3 className="font-mono text-4xl font-bold">{code}</h3>
-              <TooltipComponent content="copy pin" side="right" delayDuration={0} >
+              <h3 className="font-mono text-4xl font-bold">{id}</h3>
+              <TooltipComponent
+                content="copy pin"
+                side="right"
+                delayDuration={0}
+              >
                 <button onClick={copyCodeToClipboard}>
                   <div ref={animationParent}>
                     {!copied && (

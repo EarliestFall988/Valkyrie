@@ -223,9 +223,9 @@ export type varMetaDataType = {
   id: string;
   nodeType: string;
   label: string;
-  description: string;
   required: boolean;
   type: string;
+  value: string;
 };
 
 export type functionMetaData = nodeData & {
