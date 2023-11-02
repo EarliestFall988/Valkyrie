@@ -1,6 +1,8 @@
 import { Handle, Position } from "reactflow";
 import { api } from "~/utils/api";
 import { type functionMetaData } from "~/flow/flow";
+import { TooltipTrigger } from "@radix-ui/react-tooltip";
+import { TooltipComponent } from "~/components/tooltip";
 
 // const handleStyle = {
 //   top: 10,
@@ -33,11 +35,11 @@ export const CustomFunction = (props: nodeData) => {
     let rightIndex = 1;
 
     const result = parameters.map((parameter) => {
-      const leftTopLocation = leftIndex * 20 + 100;
-      const leftWordLocation = leftIndex * 1.75 + 7.5;
+      const leftTopLocation = leftIndex * 20 + 50;
+      const leftWordLocation = 5 - leftIndex;
 
-      const rightTopLocation = rightIndex * 20 + 100;
-      const rightWordLocation = rightIndex * 1.75 + 7.5;
+      const rightTopLocation = rightIndex * 20 + 50;
+      const rightWordLocation = 5 - rightIndex;
 
       let backgroundColor = "";
 
@@ -60,10 +62,6 @@ export const CustomFunction = (props: nodeData) => {
       if (parameter.io === "input") {
         const res = (
           <div key={parameter.id}>
-            <div className={`top-[${leftWordLocation}em] fixed left-2 text-xs`}>
-              {parameter.name}
-            </div>
-
             <Handle
               key={parameter.id}
               type="target"
@@ -74,7 +72,11 @@ export const CustomFunction = (props: nodeData) => {
                 border: "1px solid black",
                 backgroundColor: backgroundColor,
               }}
-            />
+            >
+              <div className="pointer-events-none relative w-[100px] -translate-y-[45%] translate-x-2 font-mono text-[12px] text-neutral-200">
+                {parameter.name}
+              </div>
+            </Handle>
           </div>
         );
         leftIndex += 1;
@@ -82,11 +84,6 @@ export const CustomFunction = (props: nodeData) => {
       } else {
         const res = (
           <div key={parameter.id}>
-            <div
-              className={`top-[${rightWordLocation}em] fixed right-2 text-xs`}
-            >
-              {parameter.name}
-            </div>
             <Handle
               key={parameter.id + "out"}
               type="source"
@@ -97,7 +94,11 @@ export const CustomFunction = (props: nodeData) => {
                 border: "1px solid black",
                 backgroundColor: backgroundColor,
               }}
-            />
+            >
+              <div className="pointer-events-none relative w-[100px] -translate-y-[45%] text-right -translate-x-[105px] font-mono text-[12px] text-neutral-200">
+                {parameter.name}
+              </div>
+            </Handle>
           </div>
         );
 
@@ -113,7 +114,7 @@ export const CustomFunction = (props: nodeData) => {
     <>
       {/* <Handle type="target" position={Position.Left} /> */}
 
-      <div className="flex h-48 w-80 items-start justify-center gap-2 rounded-lg bg-gray-700 p-2">
+      <div className="flex h-48 w-80 items-start justify-center gap-2 rounded-lg border border-neutral-600 bg-neutral-800 p-2">
         <div className="w-3/4">
           <div>
             <p className="text-lg font-semibold">{data.name}</p>
