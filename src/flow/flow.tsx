@@ -13,7 +13,7 @@ import {
   type OnConnect,
   type Edge,
   type Node,
-  Connection,
+  type Connection,
 } from "reactflow";
 import { ResultNode } from "~/nodes/resultNode";
 import { VariableNode } from "~/nodes/variableNode";
@@ -174,8 +174,8 @@ export const Flow: React.FC<{
   if (loadingData) {
     return (
       <div className="flex h-screen w-screen items-center justify-center gap-2 font-mono text-2xl font-semibold text-purple-600">
-        <ArrowPathIcon className="h-6 w-6 animate-spin" />
-        Loading...
+        <ArrowPathIcon className="h-10 w-10 animate-spin" />
+        {/* <p className="animate-pulse text-2xl">Loading Instruction Set...</p> */}
       </div>
     );
   }

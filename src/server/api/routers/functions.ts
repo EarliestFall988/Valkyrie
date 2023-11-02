@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
+import { prisma } from "~/server/db";
 
 export const functionsRouter = createTRPCRouter({
   createFunction: privateProcedure
@@ -95,6 +96,65 @@ export const functionsRouter = createTRPCRouter({
 
   deleteFunction: privateProcedure
     .input(
+      z.object({
+        id: z.string().min(3).max(100),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const func = await ctx.prisma.customFunction.findFirst({ // get the function
+        where: {
+          id: input.id,
+        },
+      });
+
+      if (func == null) return null;
+
+      const params = await ctx.prisma.parameters.findMany({ // find the params
+        where: {
+          customFunctionId: input.id,
+        },
+      });
+
+      await ctx.prisma.parameters.deleteMany({ // delete the params
+        where: {
+          id: {
+            in: params.map((p) => p.id),
+          },
+        },
+      });
+
+      const job = await ctx.prisma.job.findFirst({ // get the job
+        where: {
+          id: func.jobId,
+        },
+      });
+
+      if (job == null) return null;
+
+      await ctx.prisma.job.update({ // disconnect the function from the job
+        where: {
+          id: job.id,
+        },
+        data: {
+          customFunctions: {
+            disconnect: {
+              id: func.id,
+            },
+          },
+        },
+      });
+
+      const deletedFunction = await ctx.prisma.customFunction.delete({ // now we finally delete the function
+        where: {
+          id: input.id,
+        },
+      });
+
+      return deletedFunction;
+    }),
+
+  deleteFunctions: privateProcedure
+    .input(
       z
         .object({
           id: z.string(),
@@ -102,7 +162,61 @@ export const functionsRouter = createTRPCRouter({
         .array()
     )
     .mutation(async ({ ctx, input }) => {
+      const functionsToDelete = await ctx.prisma.customFunction.findMany({
+        where: {
+          id: {
+            in: input.map((i) => i.id),
+          },
+        },
+      });
+
+      const paramsToDelete = await ctx.prisma.parameters.findMany({
+        where: {
+          customFunctionId: {
+            in: functionsToDelete.map((f) => f.id),
+          },
+        },
+      });
+
+      await ctx.prisma.parameters.deleteMany({
+        //remove the params
+        where: {
+          id: {
+            in: paramsToDelete.map((p) => p.id),
+          },
+        },
+      });
+
+      const jobs = await ctx.prisma.job.findMany({
+        where: {
+          id: {
+            in: functionsToDelete.map((f) => f.jobId),
+          },
+        },
+      });
+
+      await prisma.$transaction([
+        // disconnect the functions from the job
+        ...jobs.map((job) => {
+          return prisma.job.update({
+            where: {
+              id: job.id,
+            },
+            data: {
+              customFunctions: {
+                disconnect: functionsToDelete.map((f) => {
+                  return {
+                    id: f.id,
+                  };
+                }),
+              },
+            },
+          });
+        }),
+      ]);
+
       const functions = await ctx.prisma.customFunction.deleteMany({
+        // delete the functions
         where: {
           id: {
             in: input.map((i) => i.id),

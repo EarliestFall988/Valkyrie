@@ -1,10 +1,11 @@
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 export const BackButtonComponent = (props: {
   fallbackRoute: string;
   fireBack?: boolean;
+  forceReload?: boolean;
 }) => {
   const { fallbackRoute } = props;
 
@@ -14,15 +15,19 @@ export const BackButtonComponent = (props: {
     if (props.fireBack) GoBack(fallbackRoute);
   });
 
-  const GoBack = (fallbackRoute: string) => {
-    if (window.history.length > 1) {
-      back();
-      return;
-    }
+  const GoBack = useCallback(
+    (fallbackRoute: string) => {
+      if (window.history.length > 1) {
+        if (!props.forceReload) back();
+        else window.location.reload();
+        return;
+      }
 
-    if (!fallbackRoute) void push("/");
-    else void push(fallbackRoute);
-  };
+      if (!fallbackRoute) void push("/");
+      else void push(fallbackRoute);
+    },
+    [back, push, props.forceReload]
+  );
 
   return (
     <button

@@ -261,7 +261,7 @@ const Ribbon: React.FC<{
 }> = ({ job, errorLoading, loading, save, saving }) => {
   return (
     <div className="fixed top-0 z-20 flex w-full gap-2 border-b border-neutral-700 bg-neutral-800 p-2">
-      <BackButtonComponent fallbackRoute="/dashboard" />
+      <BackButtonComponent fallbackRoute="/dashboard" forceReload />
       <div className="flex w-full items-center justify-center">
         {loading ? (
           <div className="flex items-center justify-center">
@@ -386,7 +386,14 @@ const VariablesPanel: React.FC<{
           >
             <ChevronLeftIcon className="h-6 w-6" />
           </button>
-
+          <div className="p-1 pt-10">
+            <button onClick={setNewVar} className="w-full font-semibold">
+              <div className="flex w-full items-center justify-start gap-2 rounded border border-neutral-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-purple-600 focus:bg-purple-600">
+                <PlusIcon className="h-4 w-4" />
+                <p>New Variable</p>
+              </div>
+            </button>
+          </div>
           <div className="flex flex-col">
             {(vars === undefined || vars.length === 0) && (
               <p className="w-full p-2 text-center  text-neutral-400">
@@ -395,7 +402,7 @@ const VariablesPanel: React.FC<{
             )}
             {vars !== undefined && vars.length > 0 && (
               <>
-                <div className="mt-8 max-h-[70vh] overflow-y-auto overflow-x-clip">
+                <div className="max-h-[70vh] overflow-y-auto overflow-x-clip">
                   {vars?.map((v) => (
                     <VariableItem
                       updateVar={updateVar}
@@ -409,14 +416,6 @@ const VariablesPanel: React.FC<{
                 </div>
               </>
             )}
-          </div>
-          <div className="p-2">
-            <button
-              onClick={setNewVar}
-              className="focus:purple-600 flex w-full items-center justify-center rounded bg-neutral-600 p-1 text-neutral-300 transition duration-100 hover:bg-purple-600 hover:text-purple-300 focus:text-purple-300 "
-            >
-              <PlusIcon className="h-6 w-6" />
-            </button>
           </div>
         </div>
       )}
@@ -650,64 +649,152 @@ const CustomFunctionSideBar = (props: { id: string }) => {
 
   const [open, setOpen] = useState(false);
 
+  const [animationParent] = useAutoAnimate();
+
   return (
     <>
-      <div className="fixed right-0 top-20 z-10 flex select-none flex-col gap-1 overflow-auto rounded-l border-y border-l border-neutral-700 bg-neutral-800 transition duration-100">
-        <div className="flex w-full items-center justify-end">
-          <TooltipComponent
-            content="Functions"
-            description="Define and drag/drop from this panel here."
-            side="right"
-          >
-            <button
-              onClick={() => {
-                setOpen(!open);
-              }}
-              className="p-2"
+      <div className="fixed right-0 top-20 z-10 flex select-none flex-col gap-1 rounded-l border-y border-l border-neutral-700 bg-neutral-800 transition duration-100">
+        <div ref={animationParent}>
+          <div className="flex items-center justify-end">
+            <TooltipComponent
+              content="Functions"
+              description="Define and drag/drop from this panel here."
+              side="right"
             >
-              {!open && <CpuChipIcon className="h-6 w-6" />}
-              {open && (
-                <div>
-                  <ChevronRightIcon className="h-6 w-6" />
-                </div>
-              )}
-            </button>
-          </TooltipComponent>
-        </div>
-        {open && (
-          <div className="rounded-b rounded-t border-x border-neutral-600 ">
-            <p className="w-full rounded-t bg-neutral-600 text-center">
-              Functions
-            </p>
-            <div className="w-full  border-b border-neutral-600 p-1 font-semibold">
-              <NewFunctionDialog jobId={props.id}>
-                <div className="flex w-full items-center justify-start gap-2 rounded bg-gray-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-gray-500 focus:bg-gray-500">
-                  <PlusIcon className="h-4 w-4" />
-                  <p>New Function</p>
-                </div>
-              </NewFunctionDialog>
-            </div>
-            {customFunctions?.map((f) => (
-              <div
-                key={f.id}
-                draggable={true}
-                onDragStart={(event) => onDragStart(event, f)}
-                className="flex w-full items-center justify-between gap-2 border-b border-neutral-600 p-2"
+              <button
+                onClick={() => {
+                  setOpen(!open);
+                }}
+                className="p-2"
               >
-                <div className="flex items-center justify-center gap-2">
-                  <CodeBracketIcon className="h-6 w-6" />
+                {!open && <CpuChipIcon className="h-6 w-6" />}
+                {open && (
                   <div>
-                    <p className="font-semibold">{f.name}</p>
-                    <p>{f.description}</p>
+                    <ChevronRightIcon className="h-6 w-6" />
                   </div>
-                </div>
-                <div className="">{f.parameters.length} param(s)</div>
-              </div>
-            ))}
+                )}
+              </button>
+            </TooltipComponent>
           </div>
-        )}
+          {open && (
+            <div className="min-w-[25em]">
+              <div className="flex w-full flex-col gap-1 font-semibold">
+                <div className="px-2">
+                  <NewFunctionDialog jobId={props.id}>
+                    <div className="flex w-full items-center justify-start gap-2 rounded border border-neutral-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-purple-600 focus:bg-purple-600">
+                      <PlusIcon className="h-4 w-4" />
+                      <p>New Function</p>
+                    </div>
+                  </NewFunctionDialog>
+                </div>
+                <div className="flex max-h-[70vh] flex-col gap-2 overflow-y-auto overflow-x-hidden p-2">
+                  {customFunctions !== undefined &&
+                    customFunctions?.length > 0 &&
+                    customFunctions?.map((f) => (
+                      <FunctionItem key={f.id} func={f} />
+                    ))}
+                  {customFunctions?.length === 0 && (
+                    <div className="flex w-full items-center justify-center gap-2 p-1">
+                      <p className="text-neutral-300">No Functions Yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </>
+  );
+};
+
+const FunctionItem: React.FC<{
+  func: CustomFunction & { parameters: Parameters[] };
+}> = ({ func }) => {
+  const onDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    f: CustomFunction & { parameters: Parameters[] }
+  ) => {
+    if (deleting) return;
+
+    const data = JSON.stringify({
+      id: f.id,
+      nodeType: "customFunction",
+      label: f.name,
+      description: f.description,
+      parameters: f.parameters,
+    });
+
+    event.dataTransfer.setData("application/reactflow", data);
+    event.dataTransfer.effectAllowed = "move";
+  };
+
+  const ctx = api.useContext();
+
+  const [animationParent] = useAutoAnimate();
+
+  const { mutate: deleteFunction, isLoading: deleting } =
+    api.functions.deleteFunction.useMutation({
+      onSuccess: () => {
+        console.log("Function Deleted");
+        void ctx.invalidate();
+      },
+      onError: () => {
+        console.log("Error Deleting Function");
+      },
+    });
+
+  const deleteForever = () => {
+    const result = confirm(
+      "Are you sure you want to delete this function forever? This change cannot be reverted."
+    );
+
+    if (result) {
+      deleteFunction({
+        id: func.id,
+      });
+    }
+  };
+
+  return (
+    <div
+      ref={animationParent}
+      draggable={true}
+      onDragStart={(event) => onDragStart(event, func)}
+      className="flex w-full items-center justify-between rounded-lg border border-transparent bg-neutral-700 p-3 transition duration-300 hover:scale-105 hover:cursor-pointer hover:border-neutral-400 hover:bg-neutral-600 hover:shadow-lg"
+    >
+      {!deleting && (
+        <>
+          <div className="flex items-center justify-center gap-2">
+            <CodeBracketIcon className="h-6 w-6" />
+            <div>
+              <div className="flex flex-wrap items-center justify-start gap-1">
+                <p className="font-semibold">{func.name}</p>
+                <p className="text-sm text-neutral-400">•</p>
+                <p className="text-sm font-normal text-neutral-400">
+                  {func.parameters.length}{" "}
+                  {func.parameters.length == 1 ? "param" : "params"}
+                </p>
+              </div>
+              <p className="font-xs font-normal text-neutral-400">
+                {func.description}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={deleteForever}
+            className="text-neutral-200 transition duration-100 hover:text-red-500"
+          >
+            <TrashIcon className="h-6 w-6" />
+          </button>
+        </>
+      )}
+      {deleting && (
+        <div className="flex items-center justify-center gap-2">
+          <LoadingSmall />
+        </div>
+      )}
+    </div>
   );
 };
 
