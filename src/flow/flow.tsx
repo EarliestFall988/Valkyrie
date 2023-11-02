@@ -53,13 +53,28 @@ const panOnDrag = [1];
 export const getId = () => crypto.randomUUID();
 
 const defaultEdgeOptions = {
-  type: "smoothstep",
+  type: "Bezier",
 };
 
 type nodeData = {
   id: string;
   nodeType: string;
   label: string;
+};
+
+export enum MarkerType {
+  Arrow = "arrow",
+  ArrowClosed = "arrowclosed",
+};
+
+export type EdgeMarker = {
+  type: MarkerType;
+  color?: string;
+  width?: number;
+  height?: number;
+  markerUnits?: string;
+  orient?: string;
+  strokeWidth?: number;
 };
 
 export const Flow: React.FC<{
@@ -102,6 +117,25 @@ export const Flow: React.FC<{
       onConnect(conn);
     });
   }, [flowData, appendNode, onConnect]);
+
+  useEffect(() => {
+    edges.forEach((edge) => {
+      //  console.log(edge.targetHandle);
+      if (edge.sourceHandle?.toLowerCase().startsWith("t")) {
+        edge.animated = true;
+        edge.type = "smoothstep";
+        // edge.className = "animate-pulse";
+        edge.markerEnd = {
+          type: MarkerType.ArrowClosed,
+          color: "#5555FF",
+          width: 30,
+          height: 30,
+          markerUnits: "strokeWidth",
+          orient: "auto",
+        };
+      }
+    });
+  }, [edges, flowData]);
 
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const [reactFlowInstance, setReactFlowInstance] =

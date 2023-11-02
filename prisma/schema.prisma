@@ -57,6 +57,8 @@ model CustomFunction {
     description String?      @db.VarChar(255)
     parameters  Parameters[]
 
+    
+
     jobId String
 
     job Job[]

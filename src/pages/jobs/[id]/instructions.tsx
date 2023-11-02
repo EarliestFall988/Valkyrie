@@ -600,7 +600,7 @@ const VariableItem: React.FC<{
             <p className="font-semibold">Value</p>
             <input
               onChange={(e) => {
-                setDescription(e.target.value);
+                setValue(e.target.value);
               }}
               type="text"
               className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"

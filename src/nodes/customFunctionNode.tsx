@@ -95,7 +95,7 @@ export const CustomFunction = (props: nodeData) => {
                 backgroundColor: backgroundColor,
               }}
             >
-              <div className="pointer-events-none relative w-[100px] -translate-y-[45%] text-right -translate-x-[105px] font-mono text-[12px] text-neutral-200">
+              <div className="pointer-events-none relative w-[100px] -translate-x-[105px] -translate-y-[45%] text-right font-mono text-[12px] text-neutral-200">
                 {parameter.name}
               </div>
             </Handle>
@@ -163,11 +163,11 @@ const RightControlFlowHandles = () => {
     <>
       <div className="fixed right-2 top-0 text-xs">{"-1"}</div>
       <Handle
-        type="target"
+        type="source"
         position={Position.Right}
         id="t-1"
         style={{
-          top: 10,
+          top: 9,
           background: "#fff",
           border: 0,
           borderRadius: 0,
@@ -175,11 +175,11 @@ const RightControlFlowHandles = () => {
       />
       <div className="fixed right-2 top-3 text-xs">{"0"}</div>
       <Handle
-        type="target"
+        type="source"
         position={Position.Right}
         id="t0"
         style={{
-          top: 20,
+          top: 21,
           background: "#fff",
           border: 0,
           borderRadius: 0,
@@ -188,11 +188,36 @@ const RightControlFlowHandles = () => {
 
       <div className="fixed right-2 top-6 text-xs">{"1"}</div>
       <Handle
-        type="target"
+        type="source"
         position={Position.Right}
         id="t1"
         style={{
-          top: 30,
+          top: 33,
+          background: "#fff",
+          border: 0,
+          borderRadius: 0,
+        }}
+      />
+
+      <div className="fixed right-2 top-9 text-xs">{"2"}</div>
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="t2"
+        style={{
+          top: 45,
+          background: "#fff",
+          border: 0,
+          borderRadius: 0,
+        }}
+      />
+      <div className="fixed right-2 top-12 text-xs">{"3"}</div>
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="t3"
+        style={{
+          top: 57,
           background: "#fff",
           border: 0,
           borderRadius: 0,
@@ -207,7 +232,7 @@ const LeftControlFlowHandles = () => {
     <>
       <div className="fixed left-2 top-0 text-xs">{"IN"}</div>
       <Handle
-        type="source"
+        type="target"
         position={Position.Left}
         id="in"
         style={{
