@@ -25,7 +25,7 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
         throw new Error("Job not found");
       }
 
-      const uri = `${host}api/v1/getdata/?devId=create`;
+      const uri = `${host}api/v1/getdata?version=create`;
 
       console.log(uri);
 
