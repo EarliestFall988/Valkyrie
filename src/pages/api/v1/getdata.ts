@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { type } from "os";
-import { Edge, Node } from "reactflow";
+import type { Edge, Node } from "reactflow";
 import { prisma } from "~/server/db";
 
 type ContentRequestType = {
@@ -89,10 +88,84 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
+  const instructionData = instructions.data;
+
+  const nodeAndEdgeData = JSON.parse(instructionData) as {
+    nodes: Node[];
+    edges: Edge[];
+  };
+
+  const variableEdges = nodeAndEdgeData.edges.filter((n) => {
+    const res = n.sourceHandle?.startsWith("t") && n.targetHandle === "in";
+    return !res;
+  });
+
+  // console.log(variableEdges);
+
+  const connectedParamIds = variableEdges
+    .map((e) => {
+      const paramId = e.sourceHandle?.startsWith("vout")
+        ? e.targetHandle
+        : e.sourceHandle;
+
+      const varHandleId = e.targetHandle?.startsWith("vin")
+        ? e.targetHandle
+        : e.sourceHandle;
+
+      console.log(e);
+
+      console.log("varid ", varHandleId?.split(" ")[1]?.trim());
+      const varId = varHandleId?.split(" ")[1]?.trim();
+
+      return { paramId, varId };
+    })
+    .filter((e) => e !== undefined && e !== null);
+
+  if (
+    connectedParamIds.length === 0 ||
+    connectedParamIds === undefined ||
+    connectedParamIds === null
+  ) {
+    res.status(500).json({ message: "No variables connected to nodes" });
+    return;
+  }
+
+  const params = await prisma.parameters.findMany({
+    where: {
+      id: {
+        in: connectedParamIds.map((x) => x.paramId!),
+      },
+    },
+  });
+
+  console.log("params ", params);
+
+  const variables = await prisma.variables.findMany({
+    where: {
+      id: {
+        in: connectedParamIds.map((x) => x.varId!),
+      },
+    },
+  });
+
+  console.log("vars ", variables);
+
+  const paramMap = new Map<string, string>();
+
+  connectedParamIds.forEach((e) => {
+    const param = params.find((p) => p.id === e.paramId);
+    const variable = variables.find((v) => v.id === e.varId);
+
+    if (param === undefined || variable === undefined) {
+      return;
+    }
+    paramMap.set(param.name.trim(), variable.name.trim());
+  });
+
   const vars = instructions.variables.map((v) => {
     return {
-      name: v.name,
-      type: v.type,
+      name: v.name.trim(),
+      type: v.type.trim(),
       value: v.value,
     } as VariableType;
   });
@@ -118,9 +191,9 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
       name: f.name,
       parameters: f.parameters.map((p) => {
         return {
-          name: p.name,
+          name: p.name.trim(),
           type: p.type,
-          connectVar: "", //p.connectVar,
+          connectVar: paramMap.get(p.name.trim()), //p.connectVar,
         } as parameterType;
       }),
     } as FunctionType;
@@ -139,8 +212,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
 
     return {
       type,
-      name: f.name + " state",
-      function: f.name,
+      name: f.name.trim() + " state",
+      function: f.name.trim(),
     } as StateType;
   });
 
@@ -153,13 +226,6 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(500).json({ message: "No exit function found" });
     return;
   }
-
-  const instructionData = instructions.data;
-
-  const nodeAndEdgeData = JSON.parse(instructionData) as {
-    nodes: Node[];
-    edges: Edge[];
-  };
 
   // console.log(nodeAndEdgeData.nodes);
   // console.log(nodeAndEdgeData.edges);
@@ -190,8 +256,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       return {
-        from: sourceData.label,
-        to: labelData.label,
+        from: sourceData.label.trim(),
+        to: labelData.label.trim(),
         outcome: parseInt(outcome ?? "1"),
       } as TransitionType;
     });

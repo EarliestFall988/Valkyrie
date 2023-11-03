@@ -53,7 +53,7 @@ const panOnDrag = [1];
 export const getId = () => crypto.randomUUID();
 
 const defaultEdgeOptions = {
-  type: "Bezier",
+  type: "default",
 };
 
 type nodeData = {

@@ -53,7 +53,7 @@ export const VariableNode = (props: nodeData) => {
           border: 0,
           backgroundColor: backgroundColor,
         }}
-        id="in"
+        id={`vin ${props.data.id}`}
       />
       <div className="flex h-6 items-center justify-center gap-2 rounded bg-zinc-700 px-4">
         {/* {dataType === "text" && <TextIcon className="h-4 w-4" />}
@@ -96,7 +96,7 @@ export const VariableNode = (props: nodeData) => {
           border: 0,
           backgroundColor: backgroundColor,
         }}
-        id="out"
+        id={`vout ${props.data.id}`}
       />
       {/* <Handle
         type="source"
