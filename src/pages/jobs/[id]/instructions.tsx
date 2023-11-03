@@ -1,4 +1,5 @@
 import {
+  ArchiveBoxArrowDownIcon,
   ArrowDownOnSquareIcon,
   ArrowPathIcon,
   ArrowUpOnSquareIcon,
@@ -287,8 +288,20 @@ const Ribbon: React.FC<{
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <TooltipComponent
+                    content="Version History"
+                    description="Create versions, tag versions for production releases, and view past versions of this instruction set."
+                    side="top"
+                  >
+                    <Link
+                      href={`/jobs/${job.id}/versions`}
+                      className="rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-neutral-600 focus:bg-neutral-600"
+                    >
+                      <ArchiveBoxArrowDownIcon className="h-6 w-6" />
+                    </Link>
+                  </TooltipComponent>
+                  <TooltipComponent
                     content="Connect"
-                    description="Connect to a compatible device over the internet."
+                    description="Get the id to connect this instruction set to a device."
                     side="top"
                   >
                     <Link
