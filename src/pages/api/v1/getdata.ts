@@ -48,7 +48,7 @@ type InstructionSetType = {
 const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   // console.log(req);
 
-  console.log("method", '"' + req.method + '"');
+  // console.log("method", '"' + req.method + '"');
 
   if (req.method?.trim() !== "POST") {
     res.status(405).json({ message: "Method not allowed" });
@@ -56,17 +56,20 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   const body = req.body as string;
-  console.log(body);
+  // console.log(body);
 
   const result = req.body as ContentRequestType;
 
-  const instructionId = result.id;
+  let instructionId = result.id;
   let k = result.key;
 
-  console.log("body result", result);
+  // console.log("body result", result);
+
+  let usedHeader = false;
 
   if (k === undefined || k === null || k === "") {
     k = req.headers["x-api-key"] as string;
+    usedHeader = true;
   }
 
   if (k !== key) {
@@ -74,12 +77,16 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
+  if (usedHeader) {
+    instructionId = req.headers["x-instruction-id"] as string;
+  }
+
   if (instructionId === null || instructionId === "") {
     res.status(400).json({ message: "Invalid id" });
     return;
   }
 
-  console.log("name", instructionId);
+  // console.log("name", instructionId);
 
   const instructions = await prisma.job.findFirst({
     where: {
@@ -123,9 +130,9 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
         ? e.targetHandle
         : e.sourceHandle;
 
-      console.log(e);
+      // console.log(e);
 
-      console.log("varid ", varHandleId?.split(" ")[1]?.trim());
+      // console.log("varid ", varHandleId?.split(" ")[1]?.trim());
       const varId = varHandleId?.split(" ")[1]?.trim();
 
       return { paramId, varId };
@@ -149,7 +156,7 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     },
   });
 
-  console.log("params ", params);
+  // console.log("params ", params);
 
   const variables = await prisma.variables.findMany({
     where: {
@@ -159,7 +166,7 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     },
   });
 
-  console.log("vars ", variables);
+  // console.log("vars ", variables);
 
   const paramMap = new Map<string, string>();
 
@@ -197,35 +204,78 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   let containsStart = false;
   let containsExit = false;
 
-  const functions = funcs.map((f) => {
-    return {
-      name: f.name,
-      parameters: f.parameters.map((p) => {
-        return {
-          name: p.name.trim(),
-          type: p.type,
-          connectVar: paramMap.get(p.name.trim()), //p.connectVar,
-        } as parameterType;
-      }),
-    } as FunctionType;
-  });
+  const functions = funcs
+    .filter((f) => {
+      if (f.name.toLowerCase().trim() === "start") {
+        containsStart = true;
+        return false;
+      }
+      if (f.name.toLowerCase().trim() === "exit") {
+        containsExit = true;
+        return false;
+      }
+
+      const fun = nodeAndEdgeData.nodes.find((n) => {
+        const data = n.data as { label: string };
+        return data.label.trim() === f.name.trim();
+      });
+
+      return fun !== undefined;
+    })
+    .map((f) => {
+      return {
+        name: f.name,
+        parameters: f.parameters.map((p) => {
+          return {
+            name: p.name.trim(),
+            type: p.type,
+            connectVar: paramMap.get(p.name.trim()) ?? "", //p.connectVar,
+          } as parameterType;
+        }),
+      } as FunctionType;
+    });
 
   const states = functions.map((f) => {
-    let type = "state";
-    if (f.name.toLowerCase().trim() === "start") {
-      type = "start";
-      containsStart = true;
-    }
-    if (f.name.toLowerCase().trim() === "exit") {
-      type = "fallback";
-      containsExit = true;
-    }
+    // let type = "state";
+    // if (f.name.toLowerCase().trim() === "start") {
+    //   containsStart = true;
+    //   return {
+    //     name: "s",
+    //     type: "start",
+    //     function: "Continue",
+    //   };
+    // }
+    // if (f.name.toLowerCase().trim() === "exit") {
+    //   containsExit = true;
+    //   return {
+    //     name: "exit state",
+    //     type: "fallback",
+    //     function: "Continue",
+    //   };
+    // }
 
     return {
-      type,
+      type: "state",
       name: f.name.trim() + " state",
       function: f.name.trim(),
     } as StateType;
+  });
+
+  states.push({
+    name: "Start state",
+    type: "start",
+    function: "Continue",
+  });
+
+  states.push({
+    name: "Exit state",
+    type: "fallback",
+    function: "Continue",
+  });
+
+  functions.push({
+    name: "Continue",
+    parameters: [],
   });
 
   if (!containsStart) {
@@ -267,8 +317,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       return {
-        from: sourceData.label.trim(),
-        to: labelData.label.trim(),
+        from: sourceData.label.trim() + " state",
+        to: labelData.label.trim() + " state",
         outcome: parseInt(outcome ?? "1"),
       } as TransitionType;
     });
@@ -280,6 +330,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     states: states,
     transitions: transitions,
   } as InstructionSetType;
+
+  console.log("instruction set ", instructionSet);
 
   res.status(200).json(instructionSet);
 };

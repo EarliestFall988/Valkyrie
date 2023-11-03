@@ -25,7 +25,7 @@ model Job {
     title       String  @db.VarChar(255)
     description String? @db.VarChar(255)
     ui_data     String  @db.Text()
-    data        String  @db.Text()
+    data        String  @db.LongText()
 
     customFunctions CustomFunction[]
     variables       Variables[]
