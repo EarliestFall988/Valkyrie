@@ -48,7 +48,7 @@ type InstructionSetType = {
 const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   // console.log(req);
 
-  console.log("method", "\"" + req.method + "\"");
+  console.log("method", '"' + req.method + '"');
 
   if (req.method?.trim() !== "POST") {
     res.status(405).json({ message: "Method not allowed" });
@@ -61,9 +61,13 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   const result = req.body as ContentRequestType;
 
   const instructionId = result.id;
-  const k = result.key;
+  let k = result.key;
 
   console.log("body result", result);
+
+  if (k === undefined || k === null || k === "") {
+    k = req.headers["x-api-key"] as string;
+  }
 
   if (k !== key) {
     res.status(403).json({ message: "Invalid key" });
