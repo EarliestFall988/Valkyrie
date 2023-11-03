@@ -60,6 +60,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const result = req.body as ContentRequestType;
 
+  const versionId = req.query.version as string | undefined;
+
   let instructionId = result.id;
   let k = result.key;
 
@@ -84,6 +86,41 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   if (instructionId === null || instructionId === "") {
     res.status(400).json({ message: "Invalid id" });
     return;
+  }
+
+  if (!versionId) {
+    const version = await prisma.instructionSetSchemaVersion.findFirst({
+      where: {
+        jobid: instructionId,
+        productionBuild: true,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    if (version != null) return res.status(200).send(version.data);
+    else
+      return res.status(404).json({
+        message:
+          "No production build found. Please build your instruction set before fetching data.",
+      });
+  }
+
+  if (versionId) {
+    if (versionId !== "create") {
+      const version = await prisma.instructionSetSchemaVersion.findFirst({
+        where: {
+          jobid: instructionId,
+          id: versionId,
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+      });
+
+      if (version != null) return res.status(200).send(version.data);
+    }
   }
 
   // console.log("name", instructionId);

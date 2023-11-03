@@ -57,8 +57,6 @@ model CustomFunction {
     description String?      @db.VarChar(255)
     parameters  Parameters[]
 
-    
-
     jobId String
 
     job Job[]
@@ -96,4 +94,19 @@ model Pins {
     deviceName        String @db.VarChar(255)
     deviceDescription String @db.VarChar(255)
     deviceType        String @db.VarChar(255)
+}
+
+model InstructionSetSchemaVersion {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name        String @db.VarChar(255)
+    description String @db.VarChar(255)
+
+    data String @db.LongText
+
+    jobid String @db.VarChar(255)
+
+    productionBuild Boolean @default(false)
 }
