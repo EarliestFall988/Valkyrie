@@ -18,55 +18,60 @@ export default function Home() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="min-h-screen bg-black">
+      <main className="min-h-[95vh] bg-gradient-to-r from-transparent to-neutral-900">
+        <h1 className="fixed left-0 top-0 -z-10 inline-block translate-x-[-300px] translate-y-[-200px] text-[40em] font-bold text-neutral-900">
+          Valkyrie
+        </h1>
         <div className="w-full border-b border-neutral-900 p-2 text-white">
           <UserButton afterSignOutUrl="/sign-in" />
         </div>
         <div className="flex h-[80vh] w-full ">
-          <div className="m-auto flex w-1/2 flex-col items-start justify-center gap-7">
+          <div className="m-auto flex w-2/3 flex-col items-start justify-center gap-7 ">
             <div className="flex flex-col gap-2 text-white">
               <div>
-                <h1 className="inline-block bg-gradient-to-r from-purple-500 to-red-500 bg-clip-text text-[3em] font-bold text-transparent md:text-6xl">
+                <h1 className="inline-block bg-neutral-200 bg-clip-text text-[5em] font-bold text-transparent md:text-[8em]">
                   Valkyrie
                 </h1>
               </div>
-              <h2 className="text-3xl font-semibold">
-                Pull data by building digital workers
-              </h2>
-              <p className="text-xl">
-                Valkyrie is a tool that allows you to build digital workers that
-                can pull data from anywhere and send it anywhere.
-              </p>
-              <p className="text-xl">Valkyrie is currently in alpha.</p>
             </div>
-            <SignedOut>
-              <Link href="/sign-in">
-                <div className="group relative">
-                  <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-red-500 to-purple-600 opacity-75 blur transition duration-1000 group-hover:opacity-100 group-hover:duration-200"></div>
-                  <div className="relative flex items-center gap-2 rounded-lg bg-black px-7 py-4 text-lg font-semibold leading-none">
-                    <p className="text-gray-300 transition duration-200 group-hover:text-gray-100">
-                      Sign in
-                    </p>
+            <div className="px-8">
+              <SignedOut>
+                <Link href="/sign-in">
+                  <div className="group relative">
+                    <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-blue-500 to-green-600 opacity-75 blur transition duration-1000 group-hover:opacity-100 group-hover:duration-200"></div>
+                    <div className="relative flex items-center gap-2 rounded-lg bg-black px-7 py-4 text-lg font-semibold leading-none">
+                      <p className="text-gray-300 transition duration-200 group-hover:text-gray-100">
+                        Sign in
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            </SignedOut>
-            <SignedIn>
-              <Link href="/dashboard">
-                <div className="group relative">
-                  <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-red-500 to-purple-600 opacity-75 blur transition duration-1000 group-hover:opacity-100 group-hover:duration-200"></div>
-                  <div className="relative flex items-center gap-2 rounded-lg bg-black px-7 py-4 text-lg font-semibold leading-none">
-                    <p className="text-gray-300 transition duration-200 group-hover:text-gray-100">
-                      Go To Dashboard
-                    </p>
-                    <ArrowRightIcon className="h-6 w-6 text-gray-300 transition duration-200 group-hover:text-gray-100" />
+                </Link>
+              </SignedOut>
+              <SignedIn>
+                <Link href="/dashboard">
+                  <div className="group relative">
+                    <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-r from-blue-500 to-green-600 opacity-75 blur transition duration-1000 group-hover:opacity-100 group-hover:duration-200"></div>
+                    <div className="relative flex items-center gap-2 rounded-lg bg-black px-7 py-4 text-lg font-semibold leading-none">
+                      <p className="text-gray-300 transition duration-200 group-hover:text-gray-100">
+                        Go To Dashboard
+                      </p>
+                      <ArrowRightIcon className="h-6 w-6 text-gray-300 transition duration-200 group-hover:text-gray-100" />
+                    </div>
                   </div>
-                </div>
-              </Link>
-            </SignedIn>
+                </Link>
+              </SignedIn>
+            </div>
           </div>
         </div>
       </main>
+      <footer className="flex h-[10vh] w-full items-center justify-between  bg-neutral-200 p-3 font-mono font-semibold text-neutral-700">
+        <div>
+          <div className="text-lg">Copyright &copy; Taylor Howell 2023</div>
+          <div className="text-sm font-normal text-neutral-500">
+            Fall 2023 Capstone Project
+          </div>
+        </div>
+      </footer>
     </>
   );
 }

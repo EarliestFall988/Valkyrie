@@ -29,6 +29,8 @@ model Job {
 
     customFunctions CustomFunction[]
     variables       Variables[]
+
+    authorId String @db.VarChar(255)
 }
 
 model Variables {
@@ -46,6 +48,8 @@ model Variables {
     jobId String
 
     job Job[]
+
+    authorId String @db.VarChar(255)
 }
 
 model CustomFunction {
@@ -60,6 +64,8 @@ model CustomFunction {
     jobId String
 
     job Job[]
+
+    authorId String @db.VarChar(255)
 }
 
 model Parameters {
@@ -109,4 +115,6 @@ model InstructionSetSchemaVersion {
     jobid String @db.VarChar(255)
 
     productionBuild Boolean @default(false)
+
+    authorId String @db.VarChar(255)
 }

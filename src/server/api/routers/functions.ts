@@ -19,11 +19,16 @@ export const functionsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+
+
+      const authorId = ctx.currentUser;
+
       const newFunction = await ctx.prisma.customFunction.create({
         data: {
           name: input.name,
           description: input.description,
           jobId: input.jobId,
+          authorId,
         },
       });
 
@@ -153,6 +158,23 @@ export const functionsRouter = createTRPCRouter({
       return deletedFunction;
     }),
 
+
+  getFunctionCountFromJobId: privateProcedure
+  .input(
+    z.object({
+      jobId: z.string().min(3).max(100),
+    })
+  )
+  .query(async ({ ctx, input }) => {
+    const count = await ctx.prisma.customFunction.count({
+      where: {
+        jobId: input.jobId,
+      },
+    });
+
+    return count;
+  }),
+  
   deleteFunctions: privateProcedure
     .input(
       z

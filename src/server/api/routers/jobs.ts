@@ -1,6 +1,51 @@
 import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
+import type { Job } from "@prisma/client";
+import { clerkClient } from "@clerk/nextjs";
 // import { CustomFunction } from "~/nodes/customFunctionNode";
+
+const AddUsersToJobs = async (jobs: Job[]) => {
+  const users = await clerkClient.users
+    .getUserList()
+    .then((users) => {
+      return users;
+    })
+    .catch((e) => {
+      console.log(e);
+    });
+
+  if (!users) {
+    return jobs.map((job) => {
+      return {
+        ...job,
+        user: null,
+      };
+    });
+  }
+
+  const usersById = jobs.map((job) => {
+    const user = users.find((u) => u.id === job.authorId);
+    if (!user) {
+      return {
+        ...job,
+        user: null,
+      };
+    }
+
+    return {
+      ...job,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.emailAddresses[0]?.emailAddress,
+        profilePicture: user.profileImageUrl,
+      },
+    };
+  });
+
+  return usersById;
+};
 
 export const jobsRouter = createTRPCRouter({
   createJob: privateProcedure
@@ -11,12 +56,15 @@ export const jobsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const authorId = ctx.currentUser;
+
       const newJob = await ctx.prisma.job.create({
         data: {
           description: input.description,
           title: input.title,
           data: "",
           ui_data: "",
+          authorId,
         },
       });
 
@@ -70,7 +118,7 @@ export const jobsRouter = createTRPCRouter({
                 },
               },
             },
-          }),
+          })
         ),
 
         ...input.map((id) =>
@@ -78,7 +126,7 @@ export const jobsRouter = createTRPCRouter({
             where: {
               id: id.id,
             },
-          }),
+          })
         ),
       ]);
 
@@ -91,7 +139,7 @@ export const jobsRouter = createTRPCRouter({
         id: z.string(),
         title: z.string().min(3).max(100),
         description: z.string().max(255).optional(),
-        jobData: z.string()
+        jobData: z.string(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -122,7 +170,7 @@ export const jobsRouter = createTRPCRouter({
         take: input.take,
       });
 
-      return jobs;
+      return await AddUsersToJobs(jobs);
     }),
 
   getJobById: privateProcedure

@@ -42,7 +42,7 @@ const NewJob: NextPage = () => {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-lg bg-neutral-800 p-1 px-3 outline-none ring-2 ring-neutral-700 transition duration-200 placeholder:text-neutral-500 hover:ring-2 hover:ring-purple-500 focus:ring-2 focus:ring-purple-400"
+            className="w-full rounded bg-neutral-800 p-1 px-3 outline-none ring-2 ring-neutral-700 transition duration-200 placeholder:text-neutral-500 hover:ring-2 hover:ring-blue-500 focus:ring-2 focus:ring-blue-400"
             placeholder="name"
           />
         </div>
@@ -51,7 +51,7 @@ const NewJob: NextPage = () => {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="h-20 w-full rounded-lg bg-neutral-800 p-3 outline-none ring-2 ring-neutral-700 transition duration-200 placeholder:text-neutral-500 hover:ring-2 hover:ring-purple-500 focus:ring-2 focus:ring-purple-400"
+            className="h-20 w-full rounded bg-neutral-800 p-3 outline-none ring-2 ring-neutral-700 transition duration-200 placeholder:text-neutral-500 hover:ring-2 hover:ring-blue-500 focus:ring-2 focus:ring-blue-400"
             placeholder="description"
           />
         </div>

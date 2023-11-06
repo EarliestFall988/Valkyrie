@@ -47,6 +47,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import useFlowState from "~/flow/state";
 import { shallow } from "zustand/shallow";
 import Head from "next/head";
+import { useUser } from "@clerk/nextjs";
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -62,6 +63,8 @@ const JobPage: NextPage = () => {
   // const [customFunctions, setCustomFunctions] = useState<CustomFunction[]>([]);
   const [variables, setVariables] = useState<Variables[]>([]);
   const [instructionSetLoaded, setInstructionSetLoaded] = useState(false);
+
+  const { user } = useUser();
 
   const {
     data: job,
@@ -155,6 +158,7 @@ const JobPage: NextPage = () => {
           updatedAt: new Date(),
           createdAt: new Date(),
           value: "",
+          authorId: user?.id ?? "",
         },
       ]);
     }
@@ -401,7 +405,7 @@ const VariablesPanel: React.FC<{
           </button>
           <div className="p-1 pt-10">
             <button onClick={setNewVar} className="w-full font-semibold">
-              <div className="flex w-full items-center justify-start gap-2 rounded border border-neutral-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-purple-600 focus:bg-purple-600">
+              <div className="flex w-full items-center justify-start gap-2 rounded border border-neutral-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-blue-600 focus:bg-blue-600">
                 <PlusIcon className="h-4 w-4" />
                 <p>New Variable</p>
               </div>
@@ -592,7 +596,7 @@ const VariableItem: React.FC<{
                 setName(e.target.value);
               }}
               type="text"
-              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
               value={name}
               placeholder="Be sure to name the function exactly as it is in the code..."
             />
@@ -604,7 +608,7 @@ const VariableItem: React.FC<{
                 setDescription(e.target.value);
               }}
               type="text"
-              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
               value={description}
               placeholder=""
             />
@@ -616,7 +620,7 @@ const VariableItem: React.FC<{
                 setValue(e.target.value);
               }}
               type="text"
-              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
               value={value}
               placeholder=""
             />
@@ -627,7 +631,7 @@ const VariableItem: React.FC<{
               onChange={(e) => {
                 setRequired(e.target.value === "true");
               }}
-              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
               value={required ? "true" : "false"}
               placeholder="Be sure to name the function exactly as it is in the code..."
             >
@@ -641,7 +645,7 @@ const VariableItem: React.FC<{
               onChange={(e) => {
                 setType(e.target.value);
               }}
-              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
               value={type}
               placeholder="Be sure to name the function exactly as it is in the code..."
             >
@@ -708,7 +712,7 @@ const CustomFunctionSideBar = (props: { id: string }) => {
               <div className="flex w-full flex-col gap-1 font-semibold">
                 <div className="px-2">
                   <NewFunctionDialog jobId={props.id}>
-                    <div className="flex w-full items-center justify-start gap-2 rounded border border-neutral-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-purple-600 focus:bg-purple-600">
+                    <div className="flex w-full items-center justify-start gap-2 rounded border border-neutral-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-blue-600 focus:bg-blue-600">
                       <PlusIcon className="h-4 w-4" />
                       <p>New Function</p>
                     </div>
@@ -975,7 +979,7 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
               <p className="font-lg font-semibold text-neutral-200">Name</p>
               <input
                 type="text"
-                className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+                className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
                 value={functionName}
                 onChange={(e) => {
                   setFunctionName(e.target.value);
@@ -989,7 +993,7 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
                 Description
               </p>
               <textarea
-                className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+                className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
                 value={functionDetails}
                 onChange={(e) => {
                   setFunctionDetails(e.target.value);
@@ -1066,7 +1070,7 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
                 onClick={() => {
                   SaveFunction();
                 }}
-                className="flex w-32 items-center justify-center gap-2 rounded bg-purple-700 p-2 font-semibold outline-none hover:bg-purple-600 focus:bg-purple-600"
+                className="flex w-32 items-center justify-center gap-2 rounded bg-blue-700 p-2 font-semibold outline-none hover:bg-blue-600 focus:bg-blue-600"
               >
                 <CloudArrowUpIcon className="h-5 w-5" />
                 <p>Save</p>
@@ -1120,7 +1124,7 @@ export const Parameter: FC<{
           {/* <p className="font-lg font-semibold text-neutral-200">Parameter Name</p> */}
           <input
             type="text"
-            className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+            className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
             value={parameterName}
             onChange={(e) => {
               setParameterName(e.target.value);
@@ -1140,7 +1144,7 @@ export const Parameter: FC<{
                 e.target.value as "text" | "integer" | "decimal" | "boolean"
               );
             }}
-            className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+            className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
           >
             <option value="text">Text</option>
             <option value="integer">Integer</option>

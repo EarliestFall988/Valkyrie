@@ -14,6 +14,8 @@ export const variablesRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const authorId = ctx.currentUser;
+
       const newVariable = await ctx.prisma.variables.create({
         data: {
           name: input.name,
@@ -22,6 +24,7 @@ export const variablesRouter = createTRPCRouter({
           jobId: input.jobId,
           required: input.required,
           value: input.value,
+          authorId,
           job: {
             connect: {
               id: input.jobId,
@@ -91,6 +94,8 @@ export const variablesRouter = createTRPCRouter({
       )
     )
     .mutation(async ({ ctx, input }) => {
+      const authorId = ctx.currentUser;
+
       const updatedVariables = await ctx.prisma.$transaction(
         input.map((variable) => {
           return ctx.prisma.variables.upsert({
@@ -111,6 +116,7 @@ export const variablesRouter = createTRPCRouter({
               jobId: variable.jobId,
               required: variable.required,
               value: variable.value,
+              authorId,
               job: {
                 connect: {
                   id: variable.jobId,

@@ -15,6 +15,10 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+
+
+      const authorId = ctx.currentUser;
+
       const job = await ctx.prisma.job.findFirst({
         where: {
           id: input.jobId,
@@ -52,6 +56,7 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
           productionBuild: input.productionBuild,
           jobid: input.jobId,
           data: data,
+          authorId
         },
       });
 
@@ -130,5 +135,22 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
       });
 
       return result;
+    }),
+
+  
+    getCountByJobsId: privateProcedure
+    .input(
+      z.object({
+        jobId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const count = await ctx.prisma.instructionSetSchemaVersion.count({
+        where: {
+          jobid: input.jobId,
+        },
+      });
+
+      return count;
     }),
 });
