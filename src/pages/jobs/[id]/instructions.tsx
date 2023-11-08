@@ -48,6 +48,7 @@ import useFlowState from "~/flow/state";
 import { shallow } from "zustand/shallow";
 import Head from "next/head";
 import { useUser } from "@clerk/nextjs";
+import { ReactFlowInstance } from "reactflow";
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -181,7 +182,19 @@ const JobPage: NextPage = () => {
     );
 
     const newData = {
-      nodes,
+      nodes: nodes.map((x) => {
+        return {
+          id: x.id,
+          functionId: x.data as { id: string },
+          type: x.type,
+          position: x.position,
+          width: x.width,
+          height: x.height,
+          selected: x.selected,
+          positionAbsolute: x.positionAbsolute,
+          dragging: x.dragging,
+        };
+      }),
       edges,
     };
 

@@ -120,6 +120,11 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
       });
 
       if (version != null) return res.status(200).send(version.data);
+      else
+        return res.status(404).json({
+          message:
+            "No production build found. Please build your instruction set before fetching data.",
+        });
     }
   }
 

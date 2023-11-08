@@ -143,7 +143,9 @@ const Dashboard: NextPage = () => {
           <div
             ref={animationParent}
             className={`w-full ${
-              !loading && !errorLoading ? "grid grid-flow-row lg:grid-cols-2 2xl:grid-cols-3" : ""
+              !loading && !errorLoading
+                ? "grid grid-flow-row lg:grid-cols-2 2xl:grid-cols-3"
+                : ""
             } gap-2 lg:grid-cols-2 2xl:grid-cols-3`}
           >
             {loading && !errorLoading && (
@@ -218,6 +220,8 @@ const JobCard: React.FC<{
     setMarkedForDeletion((prev) => !prev);
   };
 
+  const [animationParent] = useAutoAnimate();
+
   const { data, isLoading } = api.functions.getFunctionCountFromJobId.useQuery({
     jobId: job.id,
   });
@@ -230,6 +234,7 @@ const JobCard: React.FC<{
   return (
     <Link
       href={`/jobs/${job.id}/instructions`}
+      ref={animationParent}
       className="flex select-none items-start justify-between rounded-lg border-2 border-transparent bg-neutral-900 p-3 transition duration-200 hover:border-blue-900"
     >
       {(isDeleting && markedForDeletion) || isLoading || loadingVersionCount ? (
