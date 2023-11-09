@@ -1,8 +1,8 @@
+import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Handle, Position } from "reactflow";
+import { LoadingSmall } from "~/components/loading";
 import { api } from "~/utils/api";
-import { type functionMetaData } from "~/flow/flow";
-import { TooltipTrigger } from "@radix-ui/react-tooltip";
-import { TooltipComponent } from "~/components/tooltip";
 
 // const handleStyle = {
 //   top: 10,
@@ -12,20 +12,40 @@ import { TooltipComponent } from "~/components/tooltip";
 // };
 
 type nodeData = {
-  data: functionMetaData;
+  data: string;
 };
 
 export const CustomFunction = (props: nodeData) => {
   // console.log(props.data);
 
   const { data, isLoading } = api.functions.getFunctionById.useQuery({
-    id: props.data.id,
+    id: props.data,
   });
 
-  if (isLoading) return <div className="animate-pulse">loading...</div>;
+  const [animationParent] = useAutoAnimate();
 
-  if (data === undefined || data === null) return <div>err</div>;
+  // if (isLoading) return <div className="animate-pulse">loading...</div>;
 
+  if (data === undefined || data === null || isLoading)
+    return (
+      <div
+        ref={animationParent}
+        className="flex h-48 w-80 items-center justify-center gap-2 rounded-lg border border-neutral-600 bg-neutral-800 p-2"
+      >
+        {isLoading ? (
+          <div>
+            <LoadingSmall />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-start gap-2">
+            <XMarkIcon className="h-10 w-10 text-red-500/80" />
+            <p className="font-mono font-semibold text-red-500/80">
+              Error Loading Node
+            </p>
+          </div>
+        )}
+      </div>
+    );
   const parameters = data.parameters;
 
   // console.log(parameters);

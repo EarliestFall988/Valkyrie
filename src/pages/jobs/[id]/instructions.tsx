@@ -48,7 +48,10 @@ import useFlowState from "~/flow/state";
 import { shallow } from "zustand/shallow";
 import Head from "next/head";
 import { useUser } from "@clerk/nextjs";
-import { ReactFlowInstance } from "reactflow";
+
+type customFunctionMinimalType = {
+  id: string;
+};
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -183,9 +186,18 @@ const JobPage: NextPage = () => {
 
     const newData = {
       nodes: nodes.map((x) => {
+
+        console.log(x);
+
+        const data = x.data as customFunctionMinimalType;
+
+        console.log(data);
+
+        const dataId = data.id;
+
         return {
           id: x.id,
-          functionId: x.data as { id: string },
+          data: dataId,
           type: x.type,
           position: x.position,
           width: x.width,

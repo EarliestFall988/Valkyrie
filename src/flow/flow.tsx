@@ -65,7 +65,7 @@ type nodeData = {
 export enum MarkerType {
   Arrow = "arrow",
   ArrowClosed = "arrowclosed",
-};
+}
 
 export type EdgeMarker = {
   type: MarkerType;
@@ -167,6 +167,8 @@ export const Flow: React.FC<{
         y: event.clientY - (reactFlowBounds?.top ?? 0),
       });
 
+      const varData = JSON.parse(rawData) as varMetaDataType;
+
       if (data.nodeType === "variable") {
         const newNode = {
           id: getId(),
@@ -175,7 +177,7 @@ export const Flow: React.FC<{
             x: position?.x ?? 0,
             y: position?.y ?? 0,
           },
-          data: JSON.parse(rawData) as varMetaDataType,
+          data: varData.id,
         };
 
         // setNodes((nds) => nds.concat(newNode));
