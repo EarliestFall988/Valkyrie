@@ -1,9 +1,6 @@
 import {
-  ArchiveBoxArrowDownIcon,
   ExclamationTriangleIcon,
   PlusIcon,
-  QueueListIcon,
-  SignalIcon,
   TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -12,15 +9,12 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import Head from "next/head";
 import Link from "next/link";
-import { UserButton } from "@clerk/clerk-react";
 import { api } from "~/utils/api";
 import { Loading } from "~/components/loading";
 import { useState } from "react";
 import { type Job } from "@prisma/client";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { LightningBoltIcon, Share1Icon } from "@radix-ui/react-icons";
 import { TooltipComponent } from "~/components/tooltip";
-import Image from "next/image";
 import { DashboardHeader } from "~/components/dashboardHeader";
 
 dayjs.extend(relativeTime);
@@ -61,16 +55,6 @@ const Schema: NextPage = () => {
 
   const [jobsToDelete, setJobsToDelete] = useState<Job[]>([]);
 
-  const addJobToDelete = (id: string) => {
-    const job = jobs?.find((job) => job.id === id);
-    if (!job) return;
-    setJobsToDelete((prev) => [...prev, job]);
-  };
-
-  const removeJobToDelete = (id: string) => {
-    setJobsToDelete((prev) => prev.filter((job) => job.id !== id));
-  };
-
   // console.log(jobsToDelete);
 
   return (
@@ -91,7 +75,7 @@ const Schema: NextPage = () => {
             <h3 className="select-none text-3xl font-semibold">Schema</h3>
             <div className="flex items-center justify-center gap-2">
               <TooltipComponent side="bottom" content="Add a new instruction">
-                <Link href="/jobs/new">
+                <Link href="/schema/new">
                   <div className="flex select-none items-center justify-center gap-2 rounded border border-transparent p-2 transition duration-200 hover:cursor-pointer hover:border-blue-500 hover:text-blue-500">
                     <p>Add</p>
                     <PlusIcon className="h-6 w-6" />
