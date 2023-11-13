@@ -14,6 +14,7 @@ import {
   type Edge,
   type Node,
   type Connection,
+  updateEdge,
 } from "reactflow";
 import { ResultNode } from "~/nodes/resultNode";
 import { VariableNode } from "~/nodes/variableNode";
@@ -94,15 +95,28 @@ export const Flow: React.FC<{
   const { nodes, edges, appendNode, onNodesChange, onEdgesChange, onConnect } =
     useFlowState(selector, shallow);
 
-  useEffect(() => {
+  useMemo(() => {
     if (flowData === "" || flowData === null || flowData === undefined) return;
 
     const newData = JSON.parse(flowData) as { nodes: Node[]; edges: Edge[] };
-    // console.log("react flow data result", newData);
 
-    newData.nodes.forEach((node) => {
-      appendNode(node);
-    });
+    newData.nodes
+      .map((n) => {
+        // console.log("node", n);
+        const data = n.data as { id: string };
+        // console.log("found data", data);
+
+        return {
+          id: n.id,
+          type: n.type,
+          position: n.position,
+          data: data ?? "",
+        } as Node;
+      })
+      .forEach((node) => {
+        if (nodes.find((n) => n.id === node.id)) return;
+        appendNode(node);
+      });
 
     const connection = newData.edges.map((e) => {
       return {
@@ -118,7 +132,7 @@ export const Flow: React.FC<{
     });
   }, [flowData, appendNode, onConnect]);
 
-  useEffect(() => {
+  const UpdateEdge = useCallback(() => {
     edges.forEach((edge) => {
       //  console.log(edge.targetHandle);
       if (edge.sourceHandle?.toLowerCase().startsWith("t")) {
@@ -128,14 +142,16 @@ export const Flow: React.FC<{
         edge.markerEnd = {
           type: MarkerType.ArrowClosed,
           color: "#5555FF",
-          width: 30,
-          height: 30,
-          markerUnits: "strokeWidth",
-          orient: "auto",
+          width: 50,
+          height: 50,
         };
       }
     });
-  }, [edges, flowData]);
+  }, [edges]);
+
+  useEffect(() => {
+    UpdateEdge();
+  }, [edges, UpdateEdge, flowData]);
 
   const reactFlowWrapper = useRef<HTMLDivElement | null>(null);
   const [reactFlowInstance, setReactFlowInstance] =
@@ -170,6 +186,8 @@ export const Flow: React.FC<{
       const varData = JSON.parse(rawData) as varMetaDataType;
 
       if (data.nodeType === "variable") {
+        console.log("created variable node");
+
         const newNode = {
           id: getId(),
           type: data.nodeType,
@@ -185,6 +203,9 @@ export const Flow: React.FC<{
       }
 
       if (data.nodeType === "customFunction") {
+        const data = JSON.parse(rawData) as nodeData;
+        const functionId = data.id;
+
         const newNode = {
           id: getId(),
           type: data.nodeType,
@@ -192,7 +213,7 @@ export const Flow: React.FC<{
             x: position?.x ?? 0,
             y: position?.y ?? 0,
           },
-          data: JSON.parse(rawData) as functionMetaData,
+          data: functionId,
         };
 
         // setNodes((nds) => nds.concat(newNode));
@@ -223,8 +244,14 @@ export const Flow: React.FC<{
           nodes={nodes}
           onNodesChange={onNodesChange}
           edges={edges}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
+          onEdgesChange={(e) => {
+            onEdgesChange(e);
+            UpdateEdge();
+          }}
+          onConnect={(e) => {
+            onConnect(e);
+            UpdateEdge();
+          }}
           panOnScroll
           panOnDrag={panOnDrag}
           onInit={onInit}

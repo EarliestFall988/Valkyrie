@@ -184,20 +184,24 @@ const JobPage: NextPage = () => {
       })
     );
 
+    const minifiedEdges = edges.map((x) => {
+      return {
+        type: x.type,
+        source: x.source,
+        sourceHandle: x.sourceHandle,
+        target: x.target,
+        targetHandle: x.targetHandle,
+        id: x.id,
+      };
+    });
+
     const newData = {
       nodes: nodes.map((x) => {
-
-        console.log(x);
-
-        const data = x.data as customFunctionMinimalType;
-
-        console.log(data);
-
-        const dataId = data.id;
+        const dataId = x.data as string;
 
         return {
           id: x.id,
-          data: dataId,
+          data: dataId ?? "",
           type: x.type,
           position: x.position,
           width: x.width,
@@ -207,7 +211,7 @@ const JobPage: NextPage = () => {
           dragging: x.dragging,
         };
       }),
-      edges,
+      edges: minifiedEdges,
     };
 
     const final = JSON.stringify(newData);

@@ -52,6 +52,22 @@ export const variablesRouter = createTRPCRouter({
       return variables;
     }),
 
+  getVariableById: privateProcedure
+    .input(
+      z.object({
+        id: z.string().min(3).max(100),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const variable = await ctx.prisma.variables.findUnique({
+        where: {
+          id: input.id,
+        },
+      });
+
+      return variable;
+    }),
+
   updateVariable: privateProcedure
     .input(
       z.object({

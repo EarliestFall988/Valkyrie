@@ -21,6 +21,7 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { LightningBoltIcon, Share1Icon } from "@radix-ui/react-icons";
 import { TooltipComponent } from "~/components/tooltip";
 import Image from "next/image";
+import { DashboardHeader } from "~/components/dashboardHeader";
 
 dayjs.extend(relativeTime);
 
@@ -83,15 +84,7 @@ const Dashboard: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="min-h-[100vh] bg-gradient-to-bl from-black to-neutral-900 text-white">
-        <div className="fixed flex w-full select-none items-center justify-between gap-4 border-b border-neutral-900 bg-black/70 p-2 backdrop-blur">
-          <div className="flex items-center justify-center gap-2">
-            <QueueListIcon className="h-6 w-6" />
-            <h1 className="text-lg font-semibold">Dashboard</h1>
-          </div>
-          <div className="flex items-center justify-center gap-4">
-            <UserButton afterSignOutUrl="/" />
-          </div>
-        </div>
+        <DashboardHeader name={"Dashboard > Instructions"} />
         <div className="h-[8vh]" />
         <div className="flex w-full flex-col gap-2 rounded-lg p-2 md:m-auto md:w-5/6 2xl:w-2/3">
           <div className="flex items-center justify-between gap-5">

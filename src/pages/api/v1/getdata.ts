@@ -160,7 +160,7 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     return !res;
   });
 
-  // console.log(variableEdges);
+  console.log(variableEdges);
 
   const connectedParamIds = variableEdges
     .map((e) => {
@@ -172,9 +172,9 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
         ? e.targetHandle
         : e.sourceHandle;
 
-      // console.log(e);
+      console.log(e);
 
-      // console.log("varid ", varHandleId?.split(" ")[1]?.trim());
+      console.log("varid ", varHandleId?.split(" ")[1]?.trim());
       const varId = varHandleId?.split(" ")[1]?.trim();
 
       return { paramId, varId };

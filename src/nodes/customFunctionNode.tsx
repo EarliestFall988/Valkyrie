@@ -1,6 +1,7 @@
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { Handle, Position } from "reactflow";
+import { useCallback } from "react";
+import { Handle, Position, useUpdateNodeInternals } from "reactflow";
 import { LoadingSmall } from "~/components/loading";
 import { api } from "~/utils/api";
 
@@ -12,47 +13,27 @@ import { api } from "~/utils/api";
 // };
 
 type nodeData = {
+  id: string;
   data: string;
 };
 
 export const CustomFunction = (props: nodeData) => {
-  // console.log(props.data);
 
   const { data, isLoading } = api.functions.getFunctionById.useQuery({
-    id: props.data,
+    id: props.data ?? "",
   });
+
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const [animationParent] = useAutoAnimate();
 
-  // if (isLoading) return <div className="animate-pulse">loading...</div>;
-
-  if (data === undefined || data === null || isLoading)
-    return (
-      <div
-        ref={animationParent}
-        className="flex h-48 w-80 items-center justify-center gap-2 rounded-lg border border-neutral-600 bg-neutral-800 p-2"
-      >
-        {isLoading ? (
-          <div>
-            <LoadingSmall />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-start gap-2">
-            <XMarkIcon className="h-10 w-10 text-red-500/80" />
-            <p className="font-mono font-semibold text-red-500/80">
-              Error Loading Node
-            </p>
-          </div>
-        )}
-      </div>
-    );
-  const parameters = data.parameters;
-
-  // console.log(parameters);
-
-  const setParameterHandles = () => {
+  const setParameterHandles = useCallback(() => {
     let leftIndex = 1;
     let rightIndex = 1;
+
+    if (!data) return <div></div>;
+
+    const parameters = data?.parameters ?? [];
 
     const result = parameters.map((parameter) => {
       const leftTopLocation = leftIndex * 20 + 50;
@@ -127,8 +108,31 @@ export const CustomFunction = (props: nodeData) => {
       }
     });
 
+    updateNodeInternals(props.id);
+
     return result;
-  };
+  }, [data, updateNodeInternals, props.id]);
+
+  if (data === undefined || data === null || isLoading)
+    return (
+      <div
+        ref={animationParent}
+        className="flex h-48 w-80 items-center justify-center gap-2 rounded-lg border border-neutral-600 bg-neutral-800 p-2"
+      >
+        {isLoading ? (
+          <div>
+            <LoadingSmall />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-start gap-2">
+            <XMarkIcon className="h-10 w-10 text-red-500/80" />
+            <p className="font-mono font-semibold text-red-500/80">
+              Error Loading Node
+            </p>
+          </div>
+        )}
+      </div>
+    );
 
   return (
     <>
@@ -144,36 +148,9 @@ export const CustomFunction = (props: nodeData) => {
           </div>
         </div>
       </div>
-      {setParameterHandles()}
-      {/* <div className="top-[9.25em] fixed right-2 text-xs">{"-1"}</div>
-            <Handle
-              type="source"
-              position={Position.Right}
-              id="a"
-              style={{
-                top: 120
-              }}
-            />
-      <div className="top-[11em] fixed right-2 text-xs">{"-1"}</div>
-            <Handle
-              type="source"
-              position={Position.Right}
-              id="a"
-              style={{
-                top: 140
-              }}
-            />
-      <div className="top-[12.5em] fixed right-2 text-xs">{"-1"}</div>
-            <Handle
-              type="source"
-              position={Position.Right}
-              id="a"
-              style={{
-                top: 160
-              }}
-            /> */}
       <LeftControlFlowHandles />
       <RightControlFlowHandles />
+      {setParameterHandles()}
     </>
   );
 };
