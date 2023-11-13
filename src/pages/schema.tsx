@@ -12,7 +12,7 @@ import Link from "next/link";
 import { api } from "~/utils/api";
 import { Loading } from "~/components/loading";
 import { useState } from "react";
-import { type Job } from "@prisma/client";
+import { APISchema, type Job } from "@prisma/client";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { TooltipComponent } from "~/components/tooltip";
 import { DashboardHeader } from "~/components/dashboardHeader";
@@ -21,20 +21,20 @@ dayjs.extend(relativeTime);
 
 const Schema: NextPage = () => {
   const {
-    data: jobs,
-    isLoading: loadingJobs,
-    isError: errorLoadingJobs,
-  } = api.jobs.getAllJobs.useQuery({});
+    data: schemas,
+    isLoading,
+    isError,
+  } = api.apiSchema.getAllApiSchema.useQuery({});
 
   const jobContext = api.useContext().jobs;
 
   const [animationParent] = useAutoAnimate();
 
   const {
-    mutate: deleteJobs,
+    mutate: deleteSchemas,
     isLoading: isDeleting,
     isError: errorDeleting,
-  } = api.jobs.deleteJob.useMutation({
+  } = api.apiSchema.deleteMultipleApiSchema.useMutation({
     onSuccess: () => {
       console.log("success");
       void jobContext.invalidate();
@@ -44,8 +44,8 @@ const Schema: NextPage = () => {
     },
   });
 
-  const loading = loadingJobs;
-  const errorLoading = errorLoadingJobs || errorDeleting;
+  const loading = isLoading || isDeleting;
+  const errorLoading = isError || errorDeleting;
 
   const [canDelete, setCanDelete] = useState(false);
 
@@ -53,7 +53,7 @@ const Schema: NextPage = () => {
     setCanDelete((prev) => !prev);
   };
 
-  const [jobsToDelete, setJobsToDelete] = useState<Job[]>([]);
+  const [schemasToDelete, setSchemaToDelete] = useState<APISchema[]>([]);
 
   // console.log(jobsToDelete);
 
@@ -88,7 +88,8 @@ const Schema: NextPage = () => {
                     if (!canDelete) {
                       ToggleCanDelete();
                     } else {
-                      deleteJobs(jobsToDelete);
+                      console.log("delete schema");
+                      //   deleteSchemas();
                       setCanDelete(false);
                     }
                   }}
@@ -138,7 +139,7 @@ const Schema: NextPage = () => {
                 <ExclamationTriangleIcon className="h-6 w-6 rotate-3 text-red-500" />
               </div>
             )}
-            {!loading && !errorLoading && jobs && jobs.length !== 0 && (
+            {!loading && !errorLoading && schemas && schemas.length !== 0 && (
               <div>test</div>
             )}
           </div>
@@ -147,7 +148,5 @@ const Schema: NextPage = () => {
     </>
   );
 };
-
-
 
 export default Schema;

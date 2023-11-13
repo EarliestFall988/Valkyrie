@@ -34,17 +34,19 @@ export const apiSchemaRouter = createTRPCRouter({
       return newAPISchema;
     }),
 
-  getAllApiSchema: privateProcedure.query(async ({ ctx }) => {
-    const userId = ctx.currentUser;
+  getAllApiSchema: privateProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      const userId = ctx.currentUser;
 
-    const apiSchema = await ctx.prisma.aPISchema.findMany({
-      where: {
-        authorId: userId,
-      },
-    });
+      const apiSchema = await ctx.prisma.aPISchema.findMany({
+        where: {
+          authorId: userId,
+        },
+      });
 
-    return apiSchema;
-  }),
+      return apiSchema;
+    }),
 
   getApiSchemaById: privateProcedure
     .input(

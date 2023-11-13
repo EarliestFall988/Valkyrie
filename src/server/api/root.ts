@@ -4,6 +4,7 @@ import { jobsRouter } from "./routers/jobs";
 import { functionsRouter } from "./routers/functions";
 import { variablesRouter } from "./routers/variables";
 import { instructionSetSchemaVersionRouter } from "./routers/instructionSetSchemaVersion";
+import { apiSchemaRouter } from "./routers/apiSchema";
 
 /**
  * This is the primary router for your server.
@@ -16,6 +17,7 @@ export const appRouter = createTRPCRouter({
   functions: functionsRouter,
   variables: variablesRouter,
   schemaVersioning: instructionSetSchemaVersionRouter,
+  apiSchema: apiSchemaRouter,
 });
 
 // export type definition of API
