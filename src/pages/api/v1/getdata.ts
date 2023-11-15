@@ -58,7 +58,12 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   const body = req.body as string;
   // console.log(body);
 
-  const result = req.body as ContentRequestType;
+  if (body === undefined || body === null || body === "") {
+    res.status(400).json({ message: "Invalid body" });
+    return;
+  }
+
+  const result = JSON.parse(body) as ContentRequestType;
 
   const versionId = req.query.version as string | undefined;
 
