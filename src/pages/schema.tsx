@@ -1,4 +1,5 @@
 import {
+  EllipsisVerticalIcon,
   ExclamationTriangleIcon,
   PlusIcon,
   TrashIcon,
@@ -11,13 +12,16 @@ import Head from "next/head";
 import Link from "next/link";
 import { api } from "~/utils/api";
 import { Loading } from "~/components/loading";
-import { useState } from "react";
-import { APISchema, type Job } from "@prisma/client";
+import React, { type ReactNode, useState, useCallback, useEffect } from "react";
+import type { APISchema } from "@prisma/client";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { TooltipComponent } from "~/components/tooltip";
 import { DashboardHeader } from "~/components/dashboardHeader";
 
 dayjs.extend(relativeTime);
+
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { useRouter } from "next/router";
 
 const Schema: NextPage = () => {
   const {
@@ -55,7 +59,20 @@ const Schema: NextPage = () => {
 
   const [schemasToDelete, setSchemaToDelete] = useState<APISchema[]>([]);
 
-  // console.log(jobsToDelete);
+  const SetSchemaToDelete = (schema: APISchema, canDelete: boolean) => {
+    if (canDelete) {
+      setSchemaToDelete((prev) => [...prev, schema]);
+    } else {
+      setSchemaToDelete((prev) => prev.filter((s) => s.id !== schema.id));
+    }
+  };
+
+  const DeleteSelectedSchemas = () => {
+    deleteSchemas({
+      ids: schemasToDelete.map((s) => s.id),
+    });
+    setCanDelete(false);
+  };
 
   return (
     <>
@@ -88,9 +105,7 @@ const Schema: NextPage = () => {
                     if (!canDelete) {
                       ToggleCanDelete();
                     } else {
-                      console.log("delete schema");
-                      //   deleteSchemas();
-                      setCanDelete(false);
+                      DeleteSelectedSchemas();
                     }
                   }}
                 >
@@ -118,14 +133,7 @@ const Schema: NextPage = () => {
             </div>
           </div>
 
-          <div
-            ref={animationParent}
-            className={`w-full ${
-              !loading && !errorLoading
-                ? "grid grid-flow-row lg:grid-cols-2 2xl:grid-cols-3"
-                : ""
-            } gap-2 lg:grid-cols-2 2xl:grid-cols-3`}
-          >
+          <div className={`w-full `}>
             {loading && !errorLoading && (
               <div className="flex h-full w-full items-center justify-center">
                 <Loading />
@@ -140,7 +148,19 @@ const Schema: NextPage = () => {
               </div>
             )}
             {!loading && !errorLoading && schemas && schemas.length !== 0 && (
-              <div>test</div>
+              <div
+                ref={animationParent}
+                className="border-x border-t border-neutral-800"
+              >
+                {schemas.map((schema) => (
+                  <SchemaObj
+                    setCanDelete={canDelete}
+                    key={schema.id}
+                    schema={schema}
+                    setSchemaToDelete={SetSchemaToDelete}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -150,3 +170,128 @@ const Schema: NextPage = () => {
 };
 
 export default Schema;
+
+const SchemaObj: React.FC<{
+  schema: APISchema;
+  setCanDelete: boolean;
+  setSchemaToDelete: (s: APISchema, d: boolean) => void;
+}> = ({ schema, setCanDelete, setSchemaToDelete }) => {
+  const [deleteSchema, setDeleteSchema] = useState<boolean>(false);
+
+  const ctx = api.useContext().apiSchema;
+
+  const { mutate, isLoading: deleting } =
+    api.apiSchema.deleteApiSchema.useMutation({
+      onSuccess: () => {
+        console.log("success");
+        void ctx.invalidate();
+      },
+      onError: (error) => {
+        console.log(error);
+      },
+    });
+
+  const onDeleteSchema = () => {
+    mutate({
+      id: schema.id,
+    });
+  };
+
+  const { push } = useRouter();
+
+  const GoToSchema = () => {
+    if (deleting) return;
+
+    void push(`/schema/${schema.id}`);
+  };
+
+  const setSchemaToDeleteWrapper = useCallback(() => {
+    const canDelete = !deleteSchema;
+    setSchemaToDelete(schema, canDelete);
+    setDeleteSchema(canDelete);
+  }, [schema, setSchemaToDelete, deleteSchema]);
+
+  useEffect(() => {
+    if (!setCanDelete) {
+      setDeleteSchema(false);
+    }
+  }, [setCanDelete]);
+
+  return (
+    <div
+      onClick={GoToSchema}
+      className={`grid w-full ${
+        deleting ? "grid-cols-1" : "grid-cols-3"
+      } gap-2 border-b border-neutral-800 p-2 transition duration-200 hover:cursor-pointer hover:border-transparent hover:bg-neutral-800 `}
+    >
+      {deleting ? (
+        <div className="flex items-center justify-center">
+          <Loading />
+        </div>
+      ) : (
+        <>
+          <div>
+            <h2 className="text-lg font-semibold">{schema.name}</h2>
+            <h3 className="text-sm text-neutral-300">{schema.description}</h3>
+          </div>
+          <div className="flex flex-col items-center justify-center ">
+            <p>{schema.schemaResult}</p>
+            <p className="block text-sm text-neutral-400 md:hidden">
+              {dayjs(schema.updatedAt).fromNow()}
+            </p>
+          </div>
+          <div className="flex items-center justify-end gap-3 text-sm text-neutral-400">
+            <p className="hidden md:block">
+              {dayjs(schema.updatedAt).fromNow()}
+            </p>
+            {setCanDelete ? (
+              <button
+                onClick={setSchemaToDeleteWrapper}
+                className="rounded transition duration-200 hover:scale-105 hover:bg-blue-500"
+              >
+                {deleteSchema ? (
+                  <TrashIcon className="h-6 w-6 text-red-500" />
+                ) : (
+                  <TrashIcon className="h-6 w-6 text-neutral-300" />
+                )}
+              </button>
+            ) : (
+              <MenuDropDown name={schema.name} onDelete={onDeleteSchema}>
+                <button className="rounded transition duration-200 hover:scale-105 hover:bg-blue-500">
+                  <EllipsisVerticalIcon className="h-6 w-6" />
+                </button>
+              </MenuDropDown>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const MenuDropDown: React.FC<{
+  children: ReactNode;
+  name: string;
+  onDelete: () => void;
+}> = ({ children, name, onDelete }) => {
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>{children}</DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          className="data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade flex min-w-[220px] flex-col gap-2 rounded-lg border border-neutral-700 bg-black/30 p-[5px] shadow-[0px_10px_38px_-10px_rgba(22,_23,_24,_0.35),_0px_10px_20px_-15px_rgba(22,_23,_24,_0.2)] backdrop-blur will-change-[opacity,transform]"
+          sideOffset={5}
+        >
+          <DropdownMenu.Item
+            onClick={onDelete}
+            className="flex items-center justify-start rounded-lg p-2 font-semibold text-white transition duration-100 hover:cursor-pointer hover:bg-blue-600"
+          >
+            <TrashIcon className="mr-2 inline-block h-5 w-5" />
+            <p>Delete {name}</p>
+          </DropdownMenu.Item>
+          <DropdownMenu.Arrow className="fill-neutral-700" />
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+};

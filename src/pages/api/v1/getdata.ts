@@ -56,15 +56,20 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   const body = req.body as string;
-  // console.log(body);
 
-  const result = req.body as ContentRequestType;
+  if (!body || body === "" || body === null) {
+    res.status(400).json({ message: "No body" });
+    return;
+  }
+
+  const result = JSON.parse(body) as ContentRequestType;
 
   const versionId = req.query.version as string | undefined;
 
   let instructionId = result.id;
   let k = result.key;
 
+  console.log("key", k);
   // console.log("body result", result);
 
   let usedHeader = false;
@@ -73,6 +78,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     k = req.headers["x-api-key"] as string;
     usedHeader = true;
   }
+
+  console.log("key", k);
 
   if (k !== key) {
     res.status(403).json({ message: "Invalid key" });
