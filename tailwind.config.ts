@@ -11,6 +11,7 @@ export default {
       animation: {
         fade: "fade 0.5s ease-in-out",
         fadeSlideDown: "fadeSlideDown 0.5s ease-in-out",
+        popover: "popover 0.125s ease-in-out",
         fadeSlideUp: "fadeSlideUp 0.5s ease-in-out",
       },
       keyframes: {
@@ -19,6 +20,10 @@ export default {
           "100%": { opacity: "1" },
         },
         fadeSlideDown: {
+          "0%": { opacity: "0", transform: "translateY(-2px)" },
+          "100%": { opacity: "1", transform: "translateY(0px)" },
+        },
+        popover: {
           "0%": { opacity: "0", transform: "translateY(-2px)" },
           "100%": { opacity: "1", transform: "translateY(0px)" },
         },

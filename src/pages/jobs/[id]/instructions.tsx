@@ -3,8 +3,10 @@ import {
   ArrowDownOnSquareIcon,
   ArrowPathIcon,
   ArrowUpOnSquareIcon,
+  ArrowsUpDownIcon,
   CloudArrowUpIcon,
   CodeBracketIcon,
+  Cog8ToothIcon,
   CpuChipIcon,
   ExclamationTriangleIcon,
   IdentificationIcon,
@@ -48,6 +50,8 @@ import useFlowState from "~/flow/state";
 import { shallow } from "zustand/shallow";
 import Head from "next/head";
 import { useUser } from "@clerk/nextjs";
+
+import * as Popover from "@radix-ui/react-popover";
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -265,7 +269,7 @@ const Ribbon: React.FC<{
   saving: boolean;
 }> = ({ job, errorLoading, loading, save, saving }) => {
   return (
-    <div className="fixed top-0 z-20 flex w-full gap-2 border-b border-neutral-700 bg-neutral-800 p-2">
+    <div className="fixed top-0 z-20 flex w-full gap-2 border-b border-neutral-700 bg-neutral-800/50 p-2 backdrop-blur-lg">
       <BackButtonComponent fallbackRoute="/dashboard" forceReload />
       <div className="flex w-full items-center justify-center">
         {loading ? (
@@ -291,6 +295,12 @@ const Ribbon: React.FC<{
                   <p className="text-lg font-semibold">{job?.title}</p>
                 </div>
                 <div className="flex items-center justify-center gap-2">
+                  <SettingsPopover>
+                    <button className="rounded bg-transparent p-1 transition duration-100 hover:scale-105 hover:bg-neutral-800 focus:bg-neutral-800">
+                      <Cog8ToothIcon className="h-6 w-6" />
+                    </button>
+                  </SettingsPopover>
+                  <div className="mx-1 h-6 border-l border-neutral-600"></div>
                   <TooltipComponent
                     content="Version History"
                     description="Create versions, tag versions for production releases, and view past versions of this instruction set."
@@ -298,7 +308,7 @@ const Ribbon: React.FC<{
                   >
                     <Link
                       href={`/jobs/${job.id}/versions`}
-                      className="rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-neutral-600 focus:bg-neutral-600"
+                      className="rounded bg-transparent p-1 transition duration-100 hover:scale-105 hover:bg-neutral-800 focus:bg-neutral-800"
                     >
                       <ArchiveBoxArrowDownIcon className="h-6 w-6" />
                     </Link>
@@ -310,7 +320,7 @@ const Ribbon: React.FC<{
                   >
                     <Link
                       href={`/jobs/${job.id}/connection`}
-                      className="rounded bg-neutral-700 p-1 transition duration-100 hover:scale-105 hover:bg-neutral-600 focus:bg-neutral-600"
+                      className="rounded bg-transparent p-1 transition duration-100 hover:scale-105 hover:bg-neutral-800 focus:bg-neutral-800"
                     >
                       <SignalIcon className="h-6 w-6" />
                     </Link>
@@ -324,11 +334,11 @@ const Ribbon: React.FC<{
                       onClick={() => {
                         if (!saving) save();
                       }}
-                      className={`flex gap-1 rounded ${
+                      className={`flex gap-1  ${
                         saving
-                          ? ""
-                          : "bg-neutral-700 hover:scale-105 hover:bg-neutral-600 focus:bg-neutral-600"
-                      }  p-1 transition duration-100 `}
+                          ? "rounded-full bg-blue-600"
+                          : "rounded bg-transparent hover:scale-105 hover:bg-neutral-800 focus:bg-neutral-800"
+                      }  p-1 transition duration-200 `}
                     >
                       {saving ? (
                         <ArrowPathIcon className="h-6 w-6 animate-spin" />
@@ -356,6 +366,61 @@ const KeyBindings = () => {
       </p>
       <p className="rounded bg-neutral-900 p-1">Middle Mouse Button: Pan</p>
     </div>
+  );
+};
+
+const SettingsPopover: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [url, setUrl] = useState<string>("");
+  const [functionData, setFunctionData] = useState<string>("");
+
+  const getFunctionData = () => {
+    const data = fetch(url + "/api/functions", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": "some api key",
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setFunctionData(JSON.stringify(data, null, 2));
+      });
+  };
+
+  return (
+    <Popover.Root>
+      {/* <Popover.Anchor /> */}
+      <TooltipComponent content="Quick Settings" side="top">
+        <Popover.Trigger asChild>{children}</Popover.Trigger>
+      </TooltipComponent>
+      <Popover.Portal>
+        <Popover.Content className="z-20 w-72 animate-popover rounded-lg border border-neutral-400 bg-black/60 p-3 backdrop-blur">
+          <TooltipComponent
+            side="bottom"
+            content="Sync Functions with a Live Server"
+            description="Let Valkyrie discover what functions are available for you."
+          >
+            <div className="flex gap-2">
+              <input
+                className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
+                type="text"
+                value={url}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                }}
+                placeholder="url"
+              />
+              <button>
+                <ArrowsUpDownIcon className="h-6 w-6" />
+              </button>
+            </div>
+          </TooltipComponent>
+
+          <Popover.Close />
+          <Popover.Arrow className="fill-neutral-400" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 };
 
@@ -391,7 +456,7 @@ const VariablesPanel: React.FC<{
       ref={animationParent}
       className={`fixed left-0 top-20 z-10 flex ${
         open ? "w-80" : "p-1"
-      }   rounded-r border-y border-r border-neutral-700 bg-neutral-800 transition duration-100`}
+      }   rounded-r border-y border-b border-r border-neutral-700 bg-neutral-800/50 backdrop-blur-lg transition duration-100`}
     >
       {open && !loadingVars && (
         <div className={` w-full `}>
@@ -684,13 +749,13 @@ const CustomFunctionSideBar = (props: { id: string }) => {
 
   return (
     <>
-      <div className="fixed right-0 top-20 z-10 flex select-none flex-col gap-1 rounded-l border-y border-l border-neutral-700 bg-neutral-800 transition duration-100">
+      <div className="fixed right-0 top-20 z-10 flex select-none flex-col gap-1 rounded-l border-y border-b border-l border-neutral-700 bg-neutral-800/50 backdrop-blur-lg transition duration-100">
         <div ref={animationParent}>
           <div className="flex items-center justify-end">
             <TooltipComponent
               content="Functions"
               description="Define and drag/drop from this panel here."
-              side="right"
+              side="left"
             >
               <button
                 onClick={() => {
@@ -699,11 +764,7 @@ const CustomFunctionSideBar = (props: { id: string }) => {
                 className="p-2"
               >
                 {!open && <CpuChipIcon className="h-6 w-6" />}
-                {open && (
-                  <div>
-                    <ChevronRightIcon className="h-6 w-6" />
-                  </div>
-                )}
+                {open && <ChevronRightIcon className="h-6 w-6" />}
               </button>
             </TooltipComponent>
           </div>
