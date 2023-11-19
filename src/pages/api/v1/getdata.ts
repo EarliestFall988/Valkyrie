@@ -14,15 +14,15 @@ type VariableType = {
   type: string;
   value: string;
 };
-type parameterType = {
+export type InputParamType = {
   name: string;
   type: string;
   connectVar: string;
 };
 
-type FunctionType = {
+export type FunctionType = {
   name: string;
-  parameters: parameterType[];
+  parameters: InputParamType[];
 };
 
 type StateType = {
@@ -272,7 +272,7 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
             name: p.name.trim(),
             type: p.type,
             connectVar: paramMap.get(p.name.trim()) ?? "", //p.connectVar,
-          } as parameterType;
+          } as InputParamType;
         }),
       } as FunctionType;
     });

@@ -890,7 +890,7 @@ const FunctionItem: React.FC<{
   );
 };
 
-export type parameterType = {
+export type ParameterType = {
   name: string;
   type: "text" | "integer" | "decimal" | "boolean";
   io: "input" | "output";
@@ -903,8 +903,8 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
 }) => {
   const [functionName, setFunctionName] = useState("");
   const [functionDetails, setFunctionDetails] = useState("");
-  const [inParams, setInParams] = useState<parameterType[]>([]);
-  const [OutParams, setOutParams] = useState<parameterType[]>([]);
+  const [inParams, setInParams] = useState<ParameterType[]>([]);
+  const [OutParams, setOutParams] = useState<ParameterType[]>([]);
 
   const [animationParent] = useAutoAnimate();
 
@@ -991,7 +991,7 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
         setInParams((params) =>
           params.map((p) => {
             if (p.id === id) {
-              return { name, type, io, id: p.id } as parameterType;
+              return { name, type, io, id: p.id } as ParameterType;
             }
             return p;
           })
@@ -1002,7 +1002,7 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
         setOutParams((params) =>
           params.map((p) => {
             if (p.id === id) {
-              return { name, type, io, id: p.id } as parameterType;
+              return { name, type, io, id: p.id } as ParameterType;
             }
             return p;
           })

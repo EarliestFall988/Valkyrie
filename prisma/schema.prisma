@@ -118,3 +118,21 @@ model InstructionSetSchemaVersion {
 
     authorId String @db.VarChar(255)
 }
+
+model APISchema {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name        String @db.VarChar(255)
+    description String @db.VarChar(255)
+
+    uri     String @db.VarChar(255)
+    method  String @db.VarChar(255)
+    headers String @db.LongText
+    body    String @db.LongText
+
+    schemaResult String @db.LongText
+
+    authorId String @db.VarChar(255)
+}

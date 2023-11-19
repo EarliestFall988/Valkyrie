@@ -10,8 +10,12 @@ import { ArrowLeftIcon, CheckIcon } from "@radix-ui/react-icons";
 import { type NextPage } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { TooltipComponent } from "~/components/tooltip";
+
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { LoadingSmall } from "~/components/loading";
 
 const Connection: NextPage = () => {
   const router = useRouter();
@@ -43,6 +47,7 @@ const Connection: NextPage = () => {
           <TriggerFunctionContainer />
         </div>
       </div>
+      <ToastContainer />
     </main>
   );
 };
@@ -108,9 +113,28 @@ const ClientAppCodeContainer: React.FC<{ id: string }> = ({ id }) => {
 const DeployServerContainer = () => {
   const [uri, setUri] = useState("");
   const [serverResponse, setServerResponse] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const checkConnection = () => {
-    if (uri === "") return console.log("no uri");
+  const checkConnection = useCallback(() => {
+    if (uri === "") 
+    {
+      toast("Please enter a valid URL.", {
+        position: "bottom-left",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "dark",
+        progressStyle: {
+          background: "white",
+        },
+      });
+      return;
+    }
+
+    setLoading(true);
 
     fetch(`/api/v1/server-connect`, {
       method: "GET",
@@ -121,15 +145,35 @@ const DeployServerContainer = () => {
     })
       .then((res) => res.json())
       .then((res) => {
-        const data = res as { content: string };
+        const data = res as string;
 
-        console.log(data);
-        setServerResponse(data.content);
+        const result = JSON.parse(data) as { content: string };
 
-        alert("Server Responded: " + data.content);
+        setServerResponse(result.content);
       })
       .catch((err) => console.log(err));
-  };
+  }, [uri]);
+
+  useEffect(() => {
+    if (serverResponse === "") return;
+    toast("Server Response: " + serverResponse, {
+      position: "bottom-left",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+      progressStyle: {
+        background: "white",
+      },
+    });
+
+    setLoading(false);
+    setServerResponse("");
+
+  }, [serverResponse]);
 
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-neutral-700 bg-neutral-900 p-4">
@@ -169,7 +213,7 @@ const DeployServerContainer = () => {
             onClick={checkConnection}
             className="select-none rounded bg-blue-700 px-2 py-1 text-white transition duration-200 hover:bg-blue-600"
           >
-            Sync
+            {loading ? <LoadingSmall/> : <p>Sync</p>}
           </button>
         </TooltipComponent>
       </div>

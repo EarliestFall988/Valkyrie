@@ -22,7 +22,7 @@ import useFlowState from "./state";
 import { shallow } from "zustand/shallow";
 import {} from "@prisma/client";
 import { CustomFunction as CustomFunctionNode } from "~/nodes/customFunctionNode";
-import type { parameterType } from "~/pages/jobs/[id]/instructions";
+import type { ParameterType } from "~/pages/jobs/[id]/instructions";
 
 export const selector = (state: {
   nodes: Node[];
@@ -263,5 +263,5 @@ export type varMetaDataType = {
 };
 
 export type functionMetaData = nodeData & {
-  parameters: parameterType[];
+  parameters: ParameterType[];
 };

@@ -6,43 +6,37 @@ const SyncService = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  console.log('test');
-
   const uri = req.headers.uri as string;
-  const key = req.headers.key as string;
 
-  console.log(uri); 
+  console.log(uri);
 
-  const finalUri = uri + "/sync";
+  let finalUri = uri;
 
-  const result = fetch(finalUri , {
+  if (finalUri.endsWith("/")) {
+    finalUri = finalUri.slice(0, -1);
+  }
+
+  finalUri = finalUri + "/api/v1/sync";
+
+  const result = fetch(finalUri, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: key,
-    },
   })
     .then((response) => {
-
       if (response.status !== 200) {
         res.status(500).json({ message: "Error connecting to server" });
         return;
       }
 
-      return response.json();
+      return response.text();
     })
     .then((data) => {
-
-      console.log(data);
-
-
+      console.log("data", data);
       res.status(200).json(data);
     })
     .catch((error) => {
       console.log(error);
       res.status(500).json({ message: "Error connecting to server" });
     });
-
   return result;
 };
 
