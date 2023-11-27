@@ -7,37 +7,46 @@ const SyncService = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   const uri = req.headers.uri as string;
+  const key = req.headers["x-api-key"] as string;
+  const instructionId = req.headers["x-instruction-id"] as string;
+
+  if (!uri) {
+    res.status(400).json({ message: "Invalid uri" });
+    return;
+  }
+
+  if (!key || key === "") {
+    res.status(400).json({ message: "Invalid key" });
+    return;
+  }
+
+  if (!instructionId || instructionId === "") {
+    res.status(400).json({ message: "Invalid instruction id" });
+    return;
+  }
 
   console.log(uri);
 
-  let finalUri = uri;
+  // let finalUri = uri;
 
-  if (finalUri.endsWith("/")) {
-    finalUri = finalUri.slice(0, -1);
-  }
+  // if (finalUri.endsWith("/")) {
+  //   finalUri = finalUri.slice(0, -1);
+  // }
 
-  finalUri = finalUri + "/api/v1/sync";
+  // finalUri = finalUri + "/api/v1/sync";
 
-  const result = fetch(finalUri, {
+  const result = await fetch(uri, {
     method: "GET",
-  })
-    .then((response) => {
-      if (response.status !== 200) {
-        res.status(500).json({ message: "Error connecting to server" });
-        return;
-      }
+    headers: {
+      "Content-Type": "application/json",
+      apikey: key,
+      id: instructionId,
+    },
+  });
 
-      return response.text();
-    })
-    .then((data) => {
-      console.log("data", data);
-      res.status(200).json(data);
-    })
-    .catch((error) => {
-      console.log(error);
-      res.status(500).json({ message: "Error connecting to server" });
-    });
-  return result;
+  const data = await result.text();
+  console.log(data);
+  res.json(data);
 };
 
 export default SyncService;

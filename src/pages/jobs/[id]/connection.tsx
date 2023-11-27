@@ -2,11 +2,14 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import {
   ArrowsUpDownIcon,
   CloudIcon,
-  CodeBracketIcon,
   CommandLineIcon,
   Square2StackIcon,
 } from "@heroicons/react/24/outline";
-import { ArrowLeftIcon, CheckIcon } from "@radix-ui/react-icons";
+import {
+  ArrowLeftIcon,
+  CheckIcon,
+  GitHubLogoIcon,
+} from "@radix-ui/react-icons";
 import { type NextPage } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -41,9 +44,9 @@ const Connection: NextPage = () => {
       </div>
       <div className="flex min-h-[90vh] w-full flex-col items-center justify-center gap-4">
         <p className="select-none text-3xl">3 Main Ways to Use Valkyrie</p>
-        <div className="grid w-full grid-rows-3 gap-2 px-1 sm:px-10 lg:grid-cols-3">
+        <div className="grid w-full grid-rows-3 gap-4 px-1 transition duration-200 sm:px-10 lg:w-[80%] 2xl:w-[60%]">
           <ClientAppCodeContainer id={id} />
-          <DeployServerContainer />
+          <DeployServerContainer id={id} />
           <TriggerFunctionContainer />
         </div>
       </div>
@@ -86,7 +89,7 @@ const ClientAppCodeContainer: React.FC<{ id: string }> = ({ id }) => {
       <div className="p-5">
         <div className="flex w-full select-none items-center gap-1 text-lg text-neutral-200">
           <ArrowsUpDownIcon className="h-6 w-6 text-neutral-300 2xl:h-8 2xl:w-8" />
-          Paste this id into a Client App
+          Paste this Id into Your Valkyrie App or Service
         </div>
         <div className="flex w-full gap-3 py-2">
           <h3 className="text-lg text-neutral-300 2xl:text-2xl">{id}</h3>
@@ -110,14 +113,14 @@ const ClientAppCodeContainer: React.FC<{ id: string }> = ({ id }) => {
   );
 };
 
-const DeployServerContainer = () => {
+const DeployServerContainer: React.FC<{ id: string }> = ({ id }) => {
   const [uri, setUri] = useState("");
+  const [key, setKey] = useState("");
   const [serverResponse, setServerResponse] = useState("");
   const [loading, setLoading] = useState(false);
 
   const checkConnection = useCallback(() => {
-    if (uri === "") 
-    {
+    if (uri === "") {
       toast("Please enter a valid URL.", {
         position: "bottom-left",
         autoClose: 5000,
@@ -141,6 +144,8 @@ const DeployServerContainer = () => {
       headers: {
         "Content-Type": "application/json",
         uri: uri,
+        "x-api-key": key,
+        "x-instruction-id": id ?? "",
       },
     })
       .then((res) => res.json())
@@ -151,8 +156,12 @@ const DeployServerContainer = () => {
 
         setServerResponse(result.content);
       })
-      .catch((err) => console.log(err));
-  }, [uri]);
+      .catch((err) => {
+        console.log(err);
+        setServerResponse("Error: " + err);
+        loading && setLoading(false);
+      });
+  }, [uri, key, loading]);
 
   useEffect(() => {
     if (serverResponse === "") return;
@@ -172,22 +181,24 @@ const DeployServerContainer = () => {
 
     setLoading(false);
     setServerResponse("");
-
   }, [serverResponse]);
 
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-neutral-700 bg-neutral-900 p-4">
       <div className="flex w-full select-none items-center gap-1 text-lg text-neutral-200">
         <CommandLineIcon className="h-6 w-6 text-neutral-300 2xl:h-8 2xl:w-8" />
-        Deploy a server (Docker)
+        Deploy a Server (Docker)
       </div>
       <div className="flex">
         <Link
-          className="w-full rounded bg-blue-700 px-2 py-1 text-center text-white transition duration-200 hover:bg-blue-600"
+          className="w-full rounded-lg bg-neutral-700 px-2 py-1 text-center text-white transition duration-200 hover:bg-neutral-600"
           href="https://github.com/EarliestFall988/Valkyrie-ASPNET-Server"
           target="_blank"
         >
-          <p className="select-none">Get Server</p>
+          <div className="flex select-none items-center justify-center gap-2">
+            <GitHubLogoIcon className="h-5 w-5" />
+            <p>Download Server Code</p>
+          </div>
         </Link>
       </div>
       <div className="flex gap-2">
@@ -200,20 +211,36 @@ const DeployServerContainer = () => {
             type="text"
             value={uri}
             onChange={(e) => setUri(e.target.value)}
-            className="w-full rounded bg-neutral-700 px-2 outline-none ring-0 ring-blue-500 transition duration-200 hover:bg-neutral-600 hover:ring-2 hover:ring-neutral-500 focus:ring-1"
+            className="w-full rounded bg-neutral-700 p-2 outline-none ring-0 ring-blue-500 transition duration-200 hover:bg-neutral-600 hover:ring-2 hover:ring-neutral-500 focus:ring-1"
             placeholder="https://some-server.fly.dev"
           />
         </TooltipComponent>
         <TooltipComponent
-          description="Connect to your deployed server, verify connection, and sync all available functions."
+          content="Add the api key to your server here."
+          side="bottom"
+          delayDuration={0}
+        >
+          <input
+            type="text"
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            className="w-full rounded bg-neutral-700 p-2 outline-none ring-0 ring-blue-500 transition duration-200 hover:bg-neutral-600 hover:ring-2 hover:ring-neutral-500 focus:ring-1"
+            placeholder="api key"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") checkConnection();
+            }}
+          />
+        </TooltipComponent>
+        <TooltipComponent
+          description="Connect to your deployed server, verify connection, and download all available functions to this instruction set."
           content="Sync Valkyrie with your server."
           side="bottom"
         >
           <button
             onClick={checkConnection}
-            className="select-none rounded bg-blue-700 px-2 py-1 text-white transition duration-200 hover:bg-blue-600"
+            className="select-none rounded-lg bg-blue-700 px-2 py-1 text-white outline-none transition duration-200 hover:bg-blue-600 focus:bg-blue-600"
           >
-            {loading ? <LoadingSmall/> : <p>Sync</p>}
+            {loading ? <LoadingSmall /> : <p>Sync</p>}
           </button>
         </TooltipComponent>
       </div>
@@ -226,7 +253,7 @@ const TriggerFunctionContainer = () => {
     <div className="flex flex-col gap-2 rounded-2xl border border-neutral-700 bg-neutral-900 p-4">
       <div className="flex w-full select-none items-center gap-1 text-lg text-neutral-200">
         <CloudIcon className="h-6 w-6 text-neutral-300 2xl:h-8 2xl:w-8" />
-        Trigger An Azure Serverless Function (HTTPs)
+        Test a Serverless Azure Function or AWS Lambda
       </div>
       <div className="flex gap-2">
         <TooltipComponent
@@ -236,7 +263,7 @@ const TriggerFunctionContainer = () => {
         >
           <input
             type="text"
-            className="w-full rounded bg-neutral-700 px-2 outline-none ring-0 ring-blue-500 transition duration-200 hover:bg-neutral-600 hover:ring-2 hover:ring-neutral-500 focus:ring-1"
+            className="w-full rounded bg-neutral-700 p-2 outline-none ring-0 ring-blue-500 transition duration-200 hover:bg-neutral-600 hover:ring-2 hover:ring-neutral-500 focus:ring-1"
             placeholder="https://sometrigger.azurewebsites.net/"
           />
         </TooltipComponent>
@@ -247,18 +274,18 @@ const TriggerFunctionContainer = () => {
         >
           <input
             type="text"
-            className="w-full rounded bg-neutral-700 px-2 outline-none ring-0 ring-blue-500 transition duration-200 hover:bg-neutral-600 hover:ring-2 hover:ring-neutral-500 focus:ring-1"
+            className="w-full rounded bg-neutral-700 p-2 outline-none ring-0 ring-blue-500 transition duration-200 hover:bg-neutral-600 hover:ring-2 hover:ring-neutral-500 focus:ring-1"
             placeholder="GET"
           />
         </TooltipComponent>
       </div>
       <TooltipComponent
-        description="Valkyrie will fire a simple GET request to see if the function is available."
+        description="Valkyrie will fire a simple request to see if the function is available."
         content="Trigger the function."
         side="bottom"
       >
-        <button className="w-1/4 rounded bg-blue-700 px-2 py-1 text-white transition duration-200 hover:bg-blue-600">
-          Test Trigger
+        <button className="w-1/4 select-none rounded-lg bg-blue-700 p-2 text-white transition duration-200 hover:bg-blue-600">
+          Test
         </button>
       </TooltipComponent>
     </div>
