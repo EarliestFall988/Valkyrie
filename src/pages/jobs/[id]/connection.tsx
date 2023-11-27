@@ -161,7 +161,7 @@ const DeployServerContainer: React.FC<{ id: string }> = ({ id }) => {
         setServerResponse("Error: " + err);
         loading && setLoading(false);
       });
-  }, [uri, key, loading]);
+  }, [uri, key, loading, id]);
 
   useEffect(() => {
     if (serverResponse === "") return;

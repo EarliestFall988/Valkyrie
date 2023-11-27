@@ -1,7 +1,17 @@
 import type { NextApiHandler, NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "~/server/db";
-import { type InputParamType, type FunctionType } from "./getdata";
 import { type Parameters, type CustomFunction } from "@prisma/client";
+
+type SyncInputParamType = {
+  Name: string;
+  Type: string;
+};
+
+export type SyncFunctionType = {
+  Name: string;
+  Description: string;
+  Parameters?: SyncInputParamType[];
+};
 
 const key = "some key"; //TODO: put this in the env file
 
@@ -9,6 +19,8 @@ const SyncFunctions: NextApiHandler = async (
   req: NextApiRequest,
   res: NextApiResponse
 ) => {
+  console.log("\tsync functions");
+
   const apiKey = req.headers["x-api-key"] as string;
 
   if (req.method?.trim().toLowerCase() !== "post") {
@@ -21,7 +33,8 @@ const SyncFunctions: NextApiHandler = async (
     return;
   }
 
-  if (apiKey !== key) {// bru
+  if (apiKey !== key) {
+    // bru
     res.status(403).json({ message: "Invalid key" });
     return;
   }
@@ -34,7 +47,9 @@ const SyncFunctions: NextApiHandler = async (
     return;
   }
 
-  const functionDefs = JSON.parse(functionDataString) as FunctionType[];
+  console.log(functionDataString);
+
+  const functionDefs = JSON.parse(functionDataString) as SyncFunctionType[];
 
   if (functionDefs.length === 0) {
     res.status(400).json({ message: "No function definitions" });
@@ -45,6 +60,16 @@ const SyncFunctions: NextApiHandler = async (
     res.status(400).json({ message: "Invalid instruction id" });
     return;
   }
+
+  console.log("api key: ", apiKey);
+  console.log("instruction id: ", instructionId);
+  console.log("function defs: ", functionDefs);
+
+  functionDefs.forEach((f) => {
+    f.Parameters?.forEach((p) => {
+      console.log("param: ", p);
+    });
+  });
 
   const instructionSet = await prisma.job.findFirst({
     where: {
@@ -62,136 +87,205 @@ const SyncFunctions: NextApiHandler = async (
   const pFunctions = [] as {
     func: CustomFunction;
     params: Parameters[];
-    newParams: InputParamType[];
+    newParams: SyncInputParamType[];
     oldParams: string[];
   }[];
-  const functionsNotInDb = [] as FunctionType[];
+  const functionsNotInDb = [] as SyncFunctionType[];
 
-  functionDefs.map(async (f) => {
-    const func = await prisma.customFunction.findFirst({
-      where: {
-        AND: [
-          {
-            jobId: instructionId,
-          },
-          {
-            name: {
-              in: functionDefs.map((f) => f.name),
-            },
-          },
-        ],
-      },
-      include: {
-        parameters: {
-          where: {
-            name: {
-              in: f.parameters.map((p) => p.name),
-            },
-          },
-        },
-      },
-    });
-
-    const newParams = f.parameters.filter((p) => {
-      const param = func?.parameters.find((x) => x.name === p.name);
-
-      if (!param) {
-        return true;
-      }
-
-      return false;
-    });
-
-    const oldParams = f.parameters
-      .map((p) => {
-        const param = func?.parameters.find((x) => x.name === p.name);
-
-        if (param) {
-          return param.id;
-        }
-
-        return "";
-      })
-      .filter((x) => x !== "");
-
-    if (func) {
-      pFunctions.push({
-        func,
-        params: func.parameters,
-        newParams: newParams,
-        oldParams,
-      });
-    } else {
-      functionsNotInDb.push(f);
-    }
-
-    return f;
-  });
-
-  pFunctions.map(async ({ func, params, newParams, oldParams }) => {
-    const res = await prisma.$transaction([
-      //transaction - either the whole function gets updated, or none of it does (per function, probably should make this per request...)
-
-      //update the function data
-      prisma.customFunction.update({
+  await Promise.all(
+    functionDefs.map(async (f) => {
+      const func = await prisma.customFunction.findFirst({
         where: {
-          id: func.id,
+          AND: [
+            {
+              jobId: instructionId,
+            },
+            {
+              name: {
+                in: functionDefs.map((f) => f.Name),
+              },
+            },
+          ],
         },
-        data: {
-          name: func.name,
-          description: func.description,
-          jobId: func.jobId,
-        },
-      }),
-
-      // update parameters we want to keep
-      ...params.map((p) => {
-        return prisma.parameters.update({
-          where: {
-            id: p.id,
-          },
-          data: {
-            default: p.default,
-            description: p.description,
-            name: p.name,
-            io: p.io,
-            type: p.type,
-            required: p.required,
-          },
-        });
-      }),
-
-      // create new parameters
-      ...newParams.map((p) => {
-        return prisma.parameters.create({
-          data: {
-            default: "",
-            description: "",
-            name: p.name,
-            io: "",
-            type: p.type,
-            required: false,
-            customFunction: {
-              connect: {
-                id: func.id,
+        include: {
+          parameters: {
+            where: {
+              name: {
+                in: f.Parameters?.map((p) => p.Name),
               },
             },
           },
-        });
-      }),
-
-      //remove parameters we don't want
-      prisma.parameters.deleteMany({
-        where: {
-          id: {
-            in: oldParams,
-          },
         },
-      }),
-    ]);
+      });
 
-    return res; //👈 results of the transaction
+      if (func) {
+        const newParams = f.Parameters?.filter((p) => {
+          const param = func?.parameters.find((x) => x.name === p.Name);
+
+          if (!param) {
+            return true;
+          }
+
+          return false;
+        });
+
+        const oldParams = f.Parameters?.map((p) => {
+          const param = func?.parameters.find((x) => x.name === p.Name);
+
+          if (param) {
+            return param.id;
+          }
+
+          return "";
+        }).filter((x) => x !== "");
+
+        pFunctions.push({
+          func,
+          params: func.parameters,
+          newParams: newParams ?? [],
+          oldParams: oldParams ?? [],
+        });
+      } else {
+        functionsNotInDb.push(f);
+      }
+
+      return f;
+    })
+  );
+
+  // console.log("f not in db", functionsNotInDb);
+
+  // functionsNotInDb.forEach((f) => {
+
+  //   console.log("param count:", f.parameters?.length ?? 0);
+
+  //   f.parameters?.forEach((p) => {
+  //     console.log("p: ", p);
+  //   });
+  // })
+
+  //transaction - either all the functions get updated or none of them do
+  await prisma.$transaction(async (tx) => {
+    await Promise.all(
+      pFunctions.map(async ({ func, params, newParams, oldParams }) => {
+        console.log("\n\t\tfunctions not 4 in db: ", functionsNotInDb);
+
+        //update the function data
+        await tx.customFunction.update({
+          where: {
+            id: func.id,
+          },
+          data: {
+            name: func.name,
+            description: func.description,
+            jobId: func.jobId,
+          },
+        });
+
+        // update parameters we want to keep
+        await Promise.all(
+          params.map(async (p) => {
+            return await tx.parameters.update({
+              where: {
+                id: p.id,
+              },
+              data: {
+                default: p.default,
+                description: p.description,
+                name: p.name,
+                io: p.io,
+                type: p.type,
+                required: p.required,
+              },
+            });
+          })
+        );
+
+        // create new parameters
+        await Promise.all(
+          newParams.map(async (p) => {
+            return await tx.parameters.create({
+              data: {
+                default: "",
+                description: "",
+                name: p.Name,
+                io: "",
+                type: p.Type,
+                required: false,
+                customFunction: {
+                  connect: {
+                    id: func.id,
+                  },
+                },
+              },
+            });
+          })
+        );
+
+        //remove parameters we don't want
+        await tx.parameters.deleteMany({
+          where: {
+            id: {
+              in: oldParams,
+            },
+          },
+        });
+
+        // return res; //👈 results of the transaction
+      })
+    );
   });
+
+  console.log("creating remaining functions");
+
+  await prisma.$transaction(async (tx) => {
+    await Promise.all(
+      functionsNotInDb.map(async (f) => {
+        //create the function
+        console.log("creating function " + f.Name);
+        const func = await tx.customFunction.create({
+          data: {
+            name: f.Name,
+            jobId: instructionId,
+            description: "",
+            authorId: instructionSet.authorId, //scary...
+          },
+        });
+
+        if (!f.Parameters) {
+          return res;
+        }
+
+        //create the parameters
+        await Promise.all(
+          f.Parameters?.map(async (p) => {
+            console.log("param: ", p);
+
+            return await tx.parameters.create({
+              data: {
+                default: "",
+                description: "",
+                name: p.Name,
+                io: "",
+                type: p.Type,
+                required: false,
+                customFunction: {
+                  connect: {
+                    id: func.id,
+                  },
+                },
+              },
+            });
+          })
+        );
+
+        // return res; //👈 results of the transaction
+      })
+    );
+  });
+
+  console.log("functions not in db: ", functionsNotInDb);
+  console.log("functions in db: ", pFunctions);
 
   res.status(200).json({ pFunctions });
 };

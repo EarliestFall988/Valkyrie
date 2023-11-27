@@ -6,6 +6,8 @@ const SyncService = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
+  console.log("server connect");
+
   const uri = req.headers.uri as string;
   const key = req.headers["x-api-key"] as string;
   const instructionId = req.headers["x-instruction-id"] as string;
@@ -26,6 +28,7 @@ const SyncService = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   console.log(uri);
+  console.log("instructionId", instructionId);
 
   // let finalUri = uri;
 
@@ -38,7 +41,6 @@ const SyncService = async (req: NextApiRequest, res: NextApiResponse) => {
   const result = await fetch(uri, {
     method: "GET",
     headers: {
-      "Content-Type": "application/json",
       apikey: key,
       id: instructionId,
     },

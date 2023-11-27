@@ -22,7 +22,7 @@ export type InputParamType = {
 
 export type FunctionType = {
   name: string;
-  parameters: InputParamType[];
+  parameters?: InputParamType[];
 };
 
 type StateType = {
