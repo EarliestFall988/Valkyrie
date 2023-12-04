@@ -59,7 +59,7 @@ export const CustomFunction = (props: nodeData) => {
         backgroundColor = "yellow";
       }
 
-      if (parameter.io === "input") {
+      if (parameter.io === "input" || parameter.io === "in" || parameter.io === "ref") { // 👈 ref is for both input and ouput
         const res = (
           <div key={parameter.id}>
             <Handle
@@ -81,7 +81,9 @@ export const CustomFunction = (props: nodeData) => {
         );
         leftIndex += 1;
         return res;
-      } else {
+      } 
+      
+      if (parameter.io === "output" || parameter.io === "out" || parameter.io === "ref") { //👈 ref is for both input and output
         const res = (
           <div key={parameter.id}>
             <Handle
