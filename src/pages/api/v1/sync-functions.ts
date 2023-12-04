@@ -5,6 +5,8 @@ import { type Parameters, type CustomFunction } from "@prisma/client";
 type SyncInputParamType = {
   Name: string;
   Type: string;
+  IO: string;
+  Description: string;
 };
 
 export type SyncFunctionType = {
@@ -266,7 +268,7 @@ const SyncFunctions: NextApiHandler = async (
                 default: "",
                 description: "",
                 name: p.Name,
-                io: "",
+                io: p.IO,
                 type: p.Type,
                 required: false,
                 customFunction: {

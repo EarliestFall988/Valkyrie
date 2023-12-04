@@ -13,6 +13,9 @@ import {
   SignalIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+
+import * as Switch from "@radix-ui/react-switch";
+
 import type {
   CustomFunction,
   Variables,
@@ -295,11 +298,11 @@ const Ribbon: React.FC<{
                   <p className="text-lg font-semibold">{job?.title}</p>
                 </div>
                 <div className="flex items-center justify-center gap-2">
-                  <SettingsPopover>
+                  {/* <SettingsPopover>
                     <button className="rounded bg-transparent p-1 transition duration-100 hover:scale-105 hover:bg-neutral-800 focus:bg-neutral-800">
                       <Cog8ToothIcon className="h-6 w-6" />
                     </button>
-                  </SettingsPopover>
+                  </SettingsPopover> */}
                   <div className="mx-1 h-6 border-l border-neutral-600"></div>
                   <TooltipComponent
                     content="Version History"
@@ -370,22 +373,7 @@ const KeyBindings = () => {
 };
 
 const SettingsPopover: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [url, setUrl] = useState<string>("");
-  const [functionData, setFunctionData] = useState<string>("");
-
-  const getFunctionData = () => {
-    const data = fetch(url + "/api/functions", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": "some api key",
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setFunctionData(JSON.stringify(data, null, 2));
-      });
-  };
+  const [showGrid, setShowGrid] = useState<"on" | "off">("on");
 
   return (
     <Popover.Root>
@@ -395,26 +383,20 @@ const SettingsPopover: React.FC<{ children: ReactNode }> = ({ children }) => {
       </TooltipComponent>
       <Popover.Portal>
         <Popover.Content className="z-20 w-72 animate-popover rounded-lg border border-neutral-400 bg-black/60 p-3 backdrop-blur">
-          <TooltipComponent
-            side="bottom"
-            content="Sync Functions with a Live Server"
-            description="Let Valkyrie discover what functions are available for you."
-          >
-            <div className="flex gap-2">
-              <input
-                className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
-                type="text"
-                value={url}
-                onChange={(e) => {
-                  setUrl(e.target.value);
+          <div className="flex gap-2">
+            <p className="font-mono font-medium tracking-tight">Show Grid</p>
+            <Switch.Root
+              value={showGrid}
+              className="relative h-[25px] w-[42px] cursor-default rounded-full bg-neutral-800 outline-none data-[state=checked]:bg-blue-500"
+            >
+              <Switch.Thumb
+                onClick={() => {
+                  setShowGrid(showGrid === "on" ? "off" : "on");
                 }}
-                placeholder="url"
+                className="block h-[21px] w-[21px] translate-x-0.5 rounded-full bg-white transition-transform duration-100 will-change-transform data-[state=checked]:translate-x-[19px]"
               />
-              <button>
-                <ArrowsUpDownIcon className="h-6 w-6" />
-              </button>
-            </div>
-          </TooltipComponent>
+            </Switch.Root>
+          </div>
 
           <Popover.Close />
           <Popover.Arrow className="fill-neutral-400" />
