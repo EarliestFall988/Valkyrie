@@ -2,6 +2,21 @@ import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
 import { prisma } from "~/server/db";
 
+
+export const NormalSpacedToCamelCase = (str: string) => {
+  let i = 0;
+
+  for (i = str.length - 1; i >= 0; i--) {
+    if (str[i] == " ") {
+      const newString =
+        str.substring(0, i) + str[i + 1]?.toUpperCase() + str.substring(i + 2);
+      str = newString;
+    }
+  }
+
+  return str;
+};
+
 export const functionsRouter = createTRPCRouter({
   createFunction: privateProcedure
     .input(
@@ -19,8 +34,6 @@ export const functionsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-
-
       const authorId = ctx.currentUser;
 
       const newFunction = await ctx.prisma.customFunction.create({
@@ -106,7 +119,8 @@ export const functionsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const func = await ctx.prisma.customFunction.findFirst({ // get the function
+      const func = await ctx.prisma.customFunction.findFirst({
+        // get the function
         where: {
           id: input.id,
         },
@@ -114,13 +128,15 @@ export const functionsRouter = createTRPCRouter({
 
       if (func == null) return null;
 
-      const params = await ctx.prisma.parameters.findMany({ // find the params
+      const params = await ctx.prisma.parameters.findMany({
+        // find the params
         where: {
           customFunctionId: input.id,
         },
       });
 
-      await ctx.prisma.parameters.deleteMany({ // delete the params
+      await ctx.prisma.parameters.deleteMany({
+        // delete the params
         where: {
           id: {
             in: params.map((p) => p.id),
@@ -128,7 +144,8 @@ export const functionsRouter = createTRPCRouter({
         },
       });
 
-      const job = await ctx.prisma.job.findFirst({ // get the job
+      const job = await ctx.prisma.job.findFirst({
+        // get the job
         where: {
           id: func.jobId,
         },
@@ -136,7 +153,8 @@ export const functionsRouter = createTRPCRouter({
 
       if (job == null) return null;
 
-      await ctx.prisma.job.update({ // disconnect the function from the job
+      await ctx.prisma.job.update({
+        // disconnect the function from the job
         where: {
           id: job.id,
         },
@@ -149,7 +167,8 @@ export const functionsRouter = createTRPCRouter({
         },
       });
 
-      const deletedFunction = await ctx.prisma.customFunction.delete({ // now we finally delete the function
+      const deletedFunction = await ctx.prisma.customFunction.delete({
+        // now we finally delete the function
         where: {
           id: input.id,
         },
@@ -158,23 +177,61 @@ export const functionsRouter = createTRPCRouter({
       return deletedFunction;
     }),
 
-
   getFunctionCountFromJobId: privateProcedure
-  .input(
-    z.object({
-      jobId: z.string().min(3).max(100),
-    })
-  )
-  .query(async ({ ctx, input }) => {
-    const count = await ctx.prisma.customFunction.count({
-      where: {
-        jobId: input.jobId,
-      },
-    });
+    .input(
+      z.object({
+        jobId: z.string().min(3).max(100),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const count = await ctx.prisma.customFunction.count({
+        where: {
+          jobId: input.jobId,
+        },
+      });
 
-    return count;
-  }),
-  
+      return count;
+    }),
+
+  searchFunctionsFromJobId: privateProcedure
+    .input(
+      z.object({
+        jobId: z.string().min(3).max(100),
+        search: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      console.log("\t\t\ninput.search: ", input.search);
+
+      if (!input.search || input.search.length <= 3)
+        return await ctx.prisma.customFunction.findMany({
+          where: {
+            jobId: input.jobId,
+          },
+          include: {
+            parameters: true,
+          },
+        });
+
+      const res = NormalSpacedToCamelCase(input.search);
+
+      console.log("\t\t\nres: ", res);
+
+      const functions = await ctx.prisma.customFunction.findMany({
+        where: {
+          jobId: input.jobId,
+          name: {
+            contains: res,
+          },
+        },
+        include: {
+          parameters: true,
+        },
+      });
+
+      return functions;
+    }),
+
   deleteFunctions: privateProcedure
     .input(
       z

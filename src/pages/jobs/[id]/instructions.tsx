@@ -721,9 +721,13 @@ const VariableItem: React.FC<{
 };
 
 const CustomFunctionSideBar = (props: { id: string }) => {
-  const { data: customFunctions } = api.functions.getFunctionsByJobId.useQuery({
-    jobId: props.id,
-  });
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const { data: customFunctions } =
+    api.functions.searchFunctionsFromJobId.useQuery({
+      jobId: props.id,
+      search: searchTerm,
+    });
 
   const [open, setOpen] = useState(false);
 
@@ -753,24 +757,45 @@ const CustomFunctionSideBar = (props: { id: string }) => {
           {open && (
             <div className="min-w-[25em]">
               <div className="flex w-full flex-col gap-1 font-semibold">
-                <div className="px-2">
-                  <NewFunctionDialog jobId={props.id}>
-                    <div className="flex w-full items-center justify-start gap-2 rounded border border-neutral-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-blue-600 focus:bg-blue-600">
-                      <PlusIcon className="h-4 w-4" />
-                      <p>New Function</p>
-                    </div>
-                  </NewFunctionDialog>
-                </div>
                 <div className="flex max-h-[70vh] flex-col gap-2 overflow-y-auto overflow-x-hidden p-2">
+                  <div>
+                    <div className="flex gap-2">
+                      <input
+                        className="w-full rounded bg-neutral-700 p-1 font-mono font-normal outline-none ring-1 ring-neutral-600 hover:ring hover:ring-blue-500 focus:ring-blue-500"
+                        type="text"
+                        placeholder="search..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                          setSearchTerm(e.target.value);
+                        }}
+                      />
+                      <NewFunctionDialog jobId={props.id}>
+                        <div className="flex items-center justify-start gap-2 rounded border border-neutral-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-blue-600 focus:bg-blue-600">
+                          <p>New</p>
+                          <PlusIcon className="h-4 w-4" />
+                        </div>
+                      </NewFunctionDialog>
+                    </div>
+                  </div>
                   {customFunctions !== undefined &&
                     customFunctions?.length > 0 &&
                     customFunctions?.map((f) => (
                       <FunctionItem key={f.id} func={f} />
                     ))}
                   {customFunctions?.length === 0 && (
-                    <div className="flex w-full items-center justify-center gap-2 p-1">
-                      <p className="text-neutral-300">No Functions Yet</p>
-                    </div>
+                    <>
+                      <div className="px-2">
+                        <NewFunctionDialog jobId={props.id}>
+                          <div className="flex w-full items-center justify-start gap-2 rounded border border-neutral-600 p-1 outline-none transition duration-100 hover:cursor-pointer hover:bg-blue-600 focus:bg-blue-600">
+                            <PlusIcon className="h-4 w-4" />
+                            <p>New Function</p>
+                          </div>
+                        </NewFunctionDialog>
+                      </div>
+                      <div className="flex w-full items-center justify-center gap-2 p-1">
+                        <p className="text-neutral-300">No Functions Yet</p>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -780,6 +805,19 @@ const CustomFunctionSideBar = (props: { id: string }) => {
       </div>
     </>
   );
+};
+
+export const CamelCaseToNormal = (str: string) => {
+  let i = 0;
+
+  for (i = str.length - 1; i >= 0; i--) {
+    if (str[i] == str[i]?.toUpperCase()) {
+      const newString = str.substring(0, i) + " " + str.substring(i);
+      str = newString;
+    }
+  }
+
+  return str;
 };
 
 const FunctionItem: React.FC<{
@@ -830,6 +868,16 @@ const FunctionItem: React.FC<{
     }
   };
 
+  const fixName = (name: string) => {
+    const conversionResult = CamelCaseToNormal(name);
+
+    if (conversionResult.length > 20) {
+      return conversionResult.substring(0, 20) + "...";
+    }
+
+    return conversionResult;
+  };
+
   return (
     <div
       ref={animationParent}
@@ -843,16 +891,18 @@ const FunctionItem: React.FC<{
             <CodeBracketIcon className="h-6 w-6" />
             <div>
               <div className="flex flex-wrap items-center justify-start gap-1">
-                <p className="font-semibold">{func.name}</p>
+                <p className="font-semibold">{fixName(func.name)}</p>
                 <p className="text-sm text-neutral-400">•</p>
                 <p className="text-sm font-normal text-neutral-400">
                   {func.parameters.length}{" "}
                   {func.parameters.length == 1 ? "param" : "params"}
                 </p>
               </div>
-              <p className="font-xs font-normal text-neutral-400">
-                {func.description}
-              </p>
+              {func.description && (
+                <p className="font-xs font-normal text-neutral-400">
+                  {func.description}
+                </p>
+              )}
             </div>
           </div>
           <button

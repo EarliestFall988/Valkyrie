@@ -3,6 +3,10 @@ import { api } from "~/utils/api";
 import { type functionMetaData } from "~/flow/flow";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { TooltipComponent } from "~/components/tooltip";
+import { CamelCaseToNormal } from "~/pages/jobs/[id]/instructions";
+import { LoadingSmall } from "~/components/loading";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { SignalSlashIcon } from "@heroicons/react/24/outline";
 
 // const handleStyle = {
 //   top: 10,
@@ -18,15 +22,23 @@ type nodeData = {
 export const CustomFunction = (props: nodeData) => {
   // console.log(props.data);
 
-  const { data, isLoading } = api.functions.getFunctionById.useQuery({
+  const [animationParent] = useAutoAnimate();
+
+  const { data, isLoading, isError } = api.functions.getFunctionById.useQuery({
     id: props.data.id,
   });
 
-  if (isLoading) return <div className="animate-pulse">loading...</div>;
+  // if (isloading)
+  //   return (
+  //     <div className="flex h-48 w-80 items-center justify-center gap-2 rounded-lg border border-neutral-700 bg-neutral-900 p-2">
+  //       {/* <LoadingSmall /> */}
+  //     </div>
+  //   );
 
-  if (data === undefined || data === null) return <div>err</div>;
+  if (!isLoading && (data === undefined || data === null))
+    return <div>err</div>;
 
-  const parameters = data.parameters;
+  const parameters = data?.parameters ?? [];
 
   // console.log(parameters);
 
@@ -59,7 +71,12 @@ export const CustomFunction = (props: nodeData) => {
         backgroundColor = "yellow";
       }
 
-      if (parameter.io === "input" || parameter.io === "in" || parameter.io === "ref") { // 👈 ref is for both input and ouput
+      if (
+        parameter.io === "input" ||
+        parameter.io === "in" ||
+        parameter.io === "ref"
+      ) {
+        // 👈 ref is for both input and ouput
         const res = (
           <div key={parameter.id}>
             <Handle
@@ -74,16 +91,21 @@ export const CustomFunction = (props: nodeData) => {
               }}
             >
               <div className="pointer-events-none relative w-[100px] -translate-y-[45%] translate-x-2 font-mono text-[12px] text-neutral-200">
-                {parameter.name}
+                {CamelCaseToNormal(parameter.name)}
               </div>
             </Handle>
           </div>
         );
         leftIndex += 1;
         return res;
-      } 
-      
-      if (parameter.io === "output" || parameter.io === "out" || parameter.io === "ref") { //👈 ref is for both input and output
+      }
+
+      if (
+        parameter.io === "output" ||
+        parameter.io === "out" ||
+        parameter.io === "ref"
+      ) {
+        //👈 ref is for both input and output
         const res = (
           <div key={parameter.id}>
             <Handle
@@ -98,7 +120,7 @@ export const CustomFunction = (props: nodeData) => {
               }}
             >
               <div className="pointer-events-none relative w-[100px] -translate-x-[105px] -translate-y-[45%] text-right font-mono text-[12px] text-neutral-200">
-                {parameter.name}
+                {CamelCaseToNormal(parameter.name)}
               </div>
             </Handle>
           </div>
@@ -112,22 +134,55 @@ export const CustomFunction = (props: nodeData) => {
     return result;
   };
 
+  const loading = isLoading;
+  const error = isError;
+
   return (
     <>
       {/* <Handle type="target" position={Position.Left} /> */}
 
-      <div className="flex h-48 w-80 items-start justify-center gap-2 rounded-lg border border-neutral-600 bg-neutral-800 p-2">
-        <div className="w-3/4">
-          <div>
-            <p className="text-lg font-semibold">{data.name}</p>
-            <p className="w-full truncate whitespace-nowrap text-xs">
-              {data.description}
-            </p>
+      <div
+        ref={animationParent}
+        className={`flex  ${
+          loading
+            ? "h-20 w-80 border border-transparent"
+            : "h-48 w-80 border border-neutral-600"
+        } items-start justify-center gap-2 rounded-lg bg-neutral-800 p-2 transition-all delay-300`}
+      >
+        {error && (
+          <div className="flex h-full w-full animate-pulse items-center justify-center gap-2 text-red-500/50">
+            <SignalSlashIcon className="h-5 w-5" />
+            <p className="font-semibold">Error</p>
           </div>
-        </div>
+        )}
+
+        {loading ? (
+          <div className="flex h-full w-full animate-pulse items-center justify-center">
+            <LoadingSmall />
+          </div>
+        ) : (
+          <>
+            {!error && (
+              <>
+                <div className="w-3/4">
+                  <div>
+                    <p className="text-lg font-semibold">
+                      {CamelCaseToNormal(data?.name ?? "")}
+                    </p>
+                    <p className="w-full truncate whitespace-nowrap text-xs">
+                      {data?.description ?? ""}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
       </div>
-      {setParameterHandles()}
-      {/* <div className="top-[9.25em] fixed right-2 text-xs">{"-1"}</div>
+      {!loading && !error && (
+        <>
+          {setParameterHandles()}
+          {/* <div className="top-[9.25em] fixed right-2 text-xs">{"-1"}</div>
             <Handle
               type="source"
               position={Position.Right}
@@ -154,8 +209,10 @@ export const CustomFunction = (props: nodeData) => {
                 top: 160
               }}
             /> */}
-      <LeftControlFlowHandles />
-      <RightControlFlowHandles />
+          <LeftControlFlowHandles />
+          <RightControlFlowHandles />
+        </>
+      )}
     </>
   );
 };
