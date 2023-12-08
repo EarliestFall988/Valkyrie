@@ -3,14 +3,13 @@ import {
   ArrowDownOnSquareIcon,
   ArrowPathIcon,
   ArrowUpOnSquareIcon,
-  ArrowsUpDownIcon,
   CloudArrowUpIcon,
   CodeBracketIcon,
-  Cog8ToothIcon,
   CpuChipIcon,
   ExclamationTriangleIcon,
   IdentificationIcon,
   SignalIcon,
+  VariableIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 
@@ -166,6 +165,7 @@ const JobPage: NextPage = () => {
           createdAt: new Date(),
           value: "",
           authorId: user?.id ?? "",
+          typeId: "",
         },
       ]);
     }
@@ -289,7 +289,7 @@ const Ribbon: React.FC<{
             {!job && (
               <div className="flex items-center justify-center gap-2">
                 <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />
-                <p className="text-red-500">Could not find the Bot</p>
+                <p className="text-red-500">Could not find the instructions</p>
               </div>
             )}
             {job && (
@@ -304,6 +304,18 @@ const Ribbon: React.FC<{
                     </button>
                   </SettingsPopover> */}
                   <div className="mx-1 h-6 border-l border-neutral-600"></div>
+                  <TooltipComponent
+                    content="Manage Variable Types"
+                    description="Manage the types of variables that can be used in this instruction set. (e.g. float, string, phone number, person ...)"
+                    side="top"
+                  >
+                    <Link
+                      href={`/jobs/${job.id}/variable-types`}
+                      className="flex rounded bg-transparent p-1 transition duration-100 hover:scale-105 hover:bg-neutral-800 focus:bg-neutral-800"
+                    >
+                      <VariableIcon className="h-6 w-6" />
+                    </Link>
+                  </TooltipComponent>
                   <TooltipComponent
                     content="Version History"
                     description="Create versions, tag versions for production releases, and view past versions of this instruction set."
@@ -513,7 +525,7 @@ const VariablesPanel: React.FC<{
               }}
               className="items-center justify-center p-1 text-neutral-200"
             >
-              <CodeBracketIcon className="h-6 w-6" />
+              <VariableIcon className="h-6 w-6" />
             </button>
           </TooltipComponent>
         </div>
@@ -1153,7 +1165,7 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
           </div>
           <div className="flex items-center justify-end gap-2 pt-5">
             <Dialog.Close asChild>
-              <div className="flex w-32 items-center justify-center gap-2 rounded bg-neutral-700 p-2 font-semibold outline-none hover:bg-neutral-600 focus:bg-neutral-600">
+              <div className="flex w-32 cursor-pointer items-center justify-center gap-2 rounded bg-neutral-700 p-2 font-semibold outline-none hover:bg-neutral-600 focus:bg-neutral-600">
                 <XMarkIcon className="h-5 w-5" />
                 <p>Cancel</p>
               </div>

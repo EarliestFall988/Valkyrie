@@ -41,6 +41,7 @@ model Variables {
     name        String  @db.VarChar(255)
     description String? @db.VarChar(255)
     type        String  @db.VarChar(255)
+    typeId      String  @default("") @db.VarChar(255)
     required    Boolean @default(false)
     default     String? @db.VarChar(255)
     value       String? @db.VarChar(255)
@@ -135,4 +136,19 @@ model APISchema {
     schemaResult String @db.LongText
 
     authorId String @db.VarChar(255)
+}
+
+model VariableType {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    typeName    String @db.VarChar(255)
+    description String @db.VarChar(255)
+
+    jobId String @db.VarChar(255)
+
+    authorId String @db.VarChar(255)
+
+    @@index([authorId], name: "authorId")
 }

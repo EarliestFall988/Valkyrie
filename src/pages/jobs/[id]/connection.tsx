@@ -13,7 +13,7 @@ import {
 import { type NextPage } from "next";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { TooltipComponent } from "~/components/tooltip";
 
 import { ToastContainer, toast } from "react-toastify";
