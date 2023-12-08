@@ -16,10 +16,10 @@ export const TooltipComponent: FC<{
           <Tooltip.Content
             side={side}
             align="center"
-            className="z-30 animate-fadeSlideDown max-w-[15rem] rounded-md border border-neutral-500 bg-black px-2 py-1 "
+            className="z-30 max-w-[15rem] animate-fadeSlideDown select-none rounded-md border border-neutral-500 bg-black px-2 py-1 "
           >
             <p className="font-bold text-white">{content}</p>
-            <p className="text-neutral-300 text-sm" >{description}</p>
+            <p className="text-sm text-neutral-300">{description}</p>
             <Tooltip.Arrow className="fill-neutral-500" />
           </Tooltip.Content>
         </Tooltip.Portal>

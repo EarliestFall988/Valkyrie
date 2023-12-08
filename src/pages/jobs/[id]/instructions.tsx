@@ -13,7 +13,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 
-import * as Switch from "@radix-ui/react-switch";
+// import * as Switch from "@radix-ui/react-switch";
 
 import type {
   CustomFunction,
@@ -53,7 +53,7 @@ import { shallow } from "zustand/shallow";
 import Head from "next/head";
 import { useUser } from "@clerk/nextjs";
 
-import * as Popover from "@radix-ui/react-popover";
+// import * as Popover from "@radix-ui/react-popover";
 
 const JobPage: NextPage = () => {
   const router = useRouter();
@@ -384,39 +384,39 @@ const KeyBindings = () => {
   );
 };
 
-const SettingsPopover: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [showGrid, setShowGrid] = useState<"on" | "off">("on");
+// const SettingsPopover: React.FC<{ children: ReactNode }> = ({ children }) => {
+//   const [showGrid, setShowGrid] = useState<"on" | "off">("on");
 
-  return (
-    <Popover.Root>
-      {/* <Popover.Anchor /> */}
-      <TooltipComponent content="Quick Settings" side="top">
-        <Popover.Trigger asChild>{children}</Popover.Trigger>
-      </TooltipComponent>
-      <Popover.Portal>
-        <Popover.Content className="z-20 w-72 animate-popover rounded-lg border border-neutral-400 bg-black/60 p-3 backdrop-blur">
-          <div className="flex gap-2">
-            <p className="font-mono font-medium tracking-tight">Show Grid</p>
-            <Switch.Root
-              value={showGrid}
-              className="relative h-[25px] w-[42px] cursor-default rounded-full bg-neutral-800 outline-none data-[state=checked]:bg-blue-500"
-            >
-              <Switch.Thumb
-                onClick={() => {
-                  setShowGrid(showGrid === "on" ? "off" : "on");
-                }}
-                className="block h-[21px] w-[21px] translate-x-0.5 rounded-full bg-white transition-transform duration-100 will-change-transform data-[state=checked]:translate-x-[19px]"
-              />
-            </Switch.Root>
-          </div>
+//   return (
+//     <Popover.Root>
+//       {/* <Popover.Anchor /> */}
+//       <TooltipComponent content="Quick Settings" side="top">
+//         <Popover.Trigger asChild>{children}</Popover.Trigger>
+//       </TooltipComponent>
+//       <Popover.Portal>
+//         <Popover.Content className="z-20 w-72 animate-popover rounded-lg border border-neutral-400 bg-black/60 p-3 backdrop-blur">
+//           <div className="flex gap-2">
+//             <p className="font-mono font-medium tracking-tight">Show Grid</p>
+//             <Switch.Root
+//               value={showGrid}
+//               className="relative h-[25px] w-[42px] cursor-default rounded-full bg-neutral-800 outline-none data-[state=checked]:bg-blue-500"
+//             >
+//               <Switch.Thumb
+//                 onClick={() => {
+//                   setShowGrid(showGrid === "on" ? "off" : "on");
+//                 }}
+//                 className="block h-[21px] w-[21px] translate-x-0.5 rounded-full bg-white transition-transform duration-100 will-change-transform data-[state=checked]:translate-x-[19px]"
+//               />
+//             </Switch.Root>
+//           </div>
 
-          <Popover.Close />
-          <Popover.Arrow className="fill-neutral-400" />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  );
-};
+//           <Popover.Close />
+//           <Popover.Arrow className="fill-neutral-400" />
+//         </Popover.Content>
+//       </Popover.Portal>
+//     </Popover.Root>
+//   );
+// };
 
 const VariablesPanel: React.FC<{
   vars: Variables[];

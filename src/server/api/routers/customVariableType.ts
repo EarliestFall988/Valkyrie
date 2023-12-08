@@ -126,6 +126,51 @@ export const VariableTypes = createTRPCRouter({
       return customVariableType;
     }),
 
+  upsertVariableType: privateProcedure
+    .input(
+      z.object({
+        varId: z.string().min(3).max(100),
+        key: z.string().min(3).max(100),
+        description: z.string().optional(),
+        jobId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.currentUser) throw new Error("User not authenticated");
+
+    //   const alreadyExists = await ctx.prisma.variableType.findFirst({
+    //     where: {
+    //       typeName: input.key,
+    //       jobId: input.jobId,
+    //     },
+    //   });
+
+    //   if (alreadyExists) {
+    //     throw new TRPCError({
+    //       code: "BAD_REQUEST",
+    //       message: "Variable type already exists",
+    //     });
+    //   }
+
+      const customVariableCreated = await ctx.prisma.variableType.upsert({
+        where: {
+          id: input.varId,
+        },
+        update: {
+          typeName: input.key,
+          description: input.description ?? "",
+        },
+        create: {
+          typeName: input.key,
+          description: input.description ?? "",
+          authorId: ctx.currentUser,
+          jobId: input.jobId ?? "",
+        },
+      });
+
+      return customVariableCreated;
+    }),
+
   deleteVariableTypeById: privateProcedure
     .input(
       z.object({
