@@ -65,7 +65,7 @@ type nodeData = {
 export enum MarkerType {
   Arrow = "arrow",
   ArrowClosed = "arrowclosed",
-};
+}
 
 export type EdgeMarker = {
   type: MarkerType;
@@ -168,6 +168,13 @@ export const Flow: React.FC<{
       });
 
       if (data.nodeType === "variable") {
+        let data = JSON.parse(rawData) as varMetaDataType;
+
+        data = {
+          ...data,
+          jobId: id,
+        };
+
         const newNode = {
           id: getId(),
           type: data.nodeType,
@@ -175,7 +182,7 @@ export const Flow: React.FC<{
             x: position?.x ?? 0,
             y: position?.y ?? 0,
           },
-          data: JSON.parse(rawData) as varMetaDataType,
+          data,
         };
 
         // setNodes((nds) => nds.concat(newNode));
@@ -255,6 +262,7 @@ export const Flow: React.FC<{
 
 export type varMetaDataType = {
   id: string;
+  jobId: string;
   nodeType: string;
   label: string;
   required: boolean;

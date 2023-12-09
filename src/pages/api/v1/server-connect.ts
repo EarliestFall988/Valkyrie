@@ -27,8 +27,8 @@ const SyncService = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  console.log(uri);
-  console.log("instructionId", instructionId);
+  console.log("processing uri: " + uri);
+  console.log("processing instructionId: ", instructionId);
 
   // let finalUri = uri;
 
@@ -44,10 +44,12 @@ const SyncService = async (req: NextApiRequest, res: NextApiResponse) => {
       apikey: key,
       id: instructionId,
     },
+  }).then((res) => {
+    return res;
   });
 
   const data = await result.text();
-  console.log(data);
+  console.log("resulting data",  data);
   res.json(data);
 };
 

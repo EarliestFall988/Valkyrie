@@ -1,7 +1,9 @@
+import { Console } from "console";
 import { useEffect, useState } from "react";
 import { Handle, Position } from "reactflow";
 // import { TextIcon } from "@radix-ui/react-icons";
 import { type varMetaDataType } from "~/flow/flow";
+import { api } from "~/utils/api";
 // import { ArchiveBoxIcon } from "@heroicons/react/24/solid";
 
 // const handleStyle = { left: 10 };
@@ -11,37 +13,46 @@ type nodeData = {
 };
 
 export const VariableNode = (props: nodeData) => {
-  
-
   const [backgroundColor, setBackgroundColor] = useState<string>("white");
 
-  const dataType = props.data.type as
-    | "text"
-    | "integer"
-    | "decimal"
-    | "boolean";
+  const { data: varTypeData } =
+    api.variableTypes.getAllVariableTypesByJob.useQuery({
+      jobId: props.data.jobId,
+    });
+
+  // const dataType = props.data.type as
+  //   | "text"
+  //   | "integer"
+  //   | "decimal"
+  //   | "boolean";
 
   // const onChange = useCallback((e: string) => {
   //   console.log("VariableNode onChange", e);
   // }, []);
 
   useEffect(() => {
-    if (dataType === "text") {
-      setBackgroundColor("red");
-    }
+    // if (dataType === "text") {
+    //   setBackgroundColor("red");
+    // }
 
-    if (dataType === "integer") {
-      setBackgroundColor("blue");
-    }
+    // if (dataType === "integer") {
+    //   setBackgroundColor("blue");
+    // }
 
-    if (dataType === "boolean") {
-      setBackgroundColor("green");
-    }
+    // if (dataType === "boolean") {
+    //   setBackgroundColor("green");
+    // }
 
-    if (dataType === "decimal") {
-      setBackgroundColor("yellow");
+    // if (dataType === "decimal") {
+    //   setBackgroundColor("yellow");
+    // }
+
+    const type = varTypeData?.find((x) => x.typeName === props.data.type);
+
+    if (type) {
+      setBackgroundColor(type.colorHex);
     }
-  }, [dataType]);
+  }, [varTypeData, props.data.type]);
 
   return (
     <>
@@ -60,7 +71,7 @@ export const VariableNode = (props: nodeData) => {
         {dataType === "integer" && <p className="text-xs">123</p>}
         {dataType === "decimal" && <p className="text-sm">1.2</p>}
         {dataType === "boolean" && <p className="text-sm">y/n</p>} */}
-        <p className="whitespace-nowrap font-semibold z-20">
+        <p className="z-20 whitespace-nowrap font-semibold">
           {props?.data.label || "(Unnamed)"}{" "}
         </p>
         {/* {(dataType === "text" ||

@@ -178,9 +178,16 @@ const DeployServerContainer: React.FC<{ id: string }> = ({ id }) => {
         "x-instruction-id": id ?? "",
       },
     })
-      .then((res) => res.json())
+      .then((res) => res.text())
       .then((res) => {
-        const data = res as string;
+        const data = res;
+
+        console.log(data);
+
+        if (!data) {
+          return setServerResponse("nada");
+          loading && setLoading(false);
+        }
 
         const result = JSON.parse(data) as { content: string };
 

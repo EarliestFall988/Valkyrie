@@ -15,11 +15,12 @@ import {
 
 // import * as Switch from "@radix-ui/react-switch";
 
-import type {
-  CustomFunction,
-  Variables,
-  Job,
-  Parameters,
+import {
+  type CustomFunction,
+  type Variables,
+  type Job,
+  type Parameters,
+  VariableType,
 } from "@prisma/client";
 import { type NextPage } from "next";
 import { useRouter } from "next/router";
@@ -546,8 +547,15 @@ const VariableItem: React.FC<{
   const [name, setName] = useState(v.name ?? "");
   const [description, setDescription] = useState(v.description ?? "");
   const [required, setRequired] = useState(v.required ?? false);
-  const [type, setType] = useState(v.type ?? "text");
+  const [type, setType] = useState(v.type ?? "select one...");
+  const [selectedVariableType, setSelectedVariableType] =
+    useState<VariableType | null>();
   const [value, setValue] = useState(v.value ?? "");
+
+  const { data: variableTypes, isLoading } =
+    api.variableTypes.getAllVariableTypesByJob.useQuery({
+      jobId: v.jobId,
+    });
 
   useEffect(() => {
     const newVar = {
@@ -562,26 +570,48 @@ const VariableItem: React.FC<{
     updateVar(newVar);
   }, [name, description, required, type, v, updateVar, value]);
 
+  const selectType = useCallback(
+    (type: string) => {
+      if (!type || type === "") {
+        setType("");
+        setSelectedVariableType(null);
+      }
+
+      setType(type);
+
+      const variableType = variableTypes?.find((x) => x.typeName === type);
+      setSelectedVariableType(variableType);
+    },
+    [variableTypes]
+  );
+
   useMemo(() => {
     if (v === undefined) return;
 
     setName(v.name ?? "");
     setDescription(v.description ?? "");
     setRequired(v.required ?? false);
-    setType(v.type ?? "text");
+    setType(v.type ?? "");
+
+    const variableType = variableTypes?.find((x) => x.typeName === type);
+    setSelectedVariableType(variableType);
 
     const value = v.value ?? "";
 
-    if (v.type === "text") setValue(value);
+    if (v.type === "text" || v.type === "string") setValue(value);
 
-    if (v.type === "decimal" || v.value === "integer") {
+    if (
+      v.type?.toLowerCase() === "decimal" ||
+      v.type?.toLowerCase() === "integer" ||
+      v.type?.toLowerCase() === "number"
+    ) {
       const num = parseFloat(value);
 
       if (isNaN(num)) setValue("0");
       else setValue(num.toString());
     }
 
-    if (v.type === "boolean") {
+    if (v.type.toLowerCase() === "boolean") {
       if (!value || value === "") setValue("false");
       setValue(v.value ?? "false");
     }
@@ -619,23 +649,13 @@ const VariableItem: React.FC<{
           className="flex w-full items-center justify-between rounded-2xl bg-neutral-600 p-1 px-3 pb-1 transition duration-300 hover:scale-105 hover:shadow-lg"
         >
           <div className="flex items-center justify-center gap-2">
-            {v.type === "text" && <div className="rounded bg-red-500 p-1" />}
-            {v.type === "integer" && (
-              <div className="rounded bg-blue-500 p-1" />
-            )}
-            {v.type === "decimal" && (
-              <div className="rounded bg-yellow-500 p-1" />
-            )}
-            {v.type === "boolean" && (
-              <div className="rounded bg-green-500 p-1" />
-            )}
-            <p className="w-full truncate whitespace-nowrap">
-              {name}{" "}
-              <span className="text-sm text-neutral-400">
-                {" "}
-                • {v.type !== "boolean" ? v.type : "yes/no"}
-              </span>
-            </p>
+            <div
+              className="rounded p-1"
+              style={{
+                backgroundColor: selectedVariableType?.colorHex ?? "#000000",
+              }}
+            />
+            <p className="font-semibold">{name}</p>
           </div>
           <div>
             <ChevronDownIcon
@@ -700,19 +720,26 @@ const VariableItem: React.FC<{
           </div>
           <div>
             <p className="font-semibold">Type</p>
-            <select
-              onChange={(e) => {
-                setType(e.target.value);
-              }}
-              className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
-              value={type}
-              placeholder="Be sure to name the function exactly as it is in the code..."
-            >
-              <option value={"text"}>Text</option>
-              <option value={"integer"}>Integer</option>
-              <option value={"decimal"}>decimal</option>
-              <option value={"boolean"}>yes/no</option>
-            </select>
+            {!isLoading && (
+              <select
+                onChange={(e) => {
+                  selectType(e.target.value);
+                }}
+                className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-blue-700"
+                value={type}
+                placeholder="Be sure to name the function exactly as it is in the code..."
+              >
+                <option value={""} className="font-mono">
+                  Select a type
+                </option>
+                {variableTypes?.map((vt) => (
+                  <option key={vt.id} value={vt.typeName}>
+                    {vt.typeName}
+                  </option>
+                ))}
+              </select>
+            )}
+            {isLoading && <p>Loading ...</p>}
           </div>
           <div className="flex w-full flex-col gap-2 rounded border border-dashed border-red-900 p-2">
             <p className="font-semibold">Danger Zone</p>
