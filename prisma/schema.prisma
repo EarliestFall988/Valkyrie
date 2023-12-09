@@ -145,8 +145,8 @@ model VariableType {
 
     typeName    String @db.VarChar(255)
     description String @db.VarChar(255)
-
-    jobId String @db.VarChar(255)
+    colorHex    String @default("#000000") @db.VarChar(255)
+    jobId       String @db.VarChar(255)
 
     authorId String @db.VarChar(255)
 

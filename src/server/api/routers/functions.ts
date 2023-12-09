@@ -1,7 +1,6 @@
-import { z } from "zod";
+import { promise, z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
 import { prisma } from "~/server/db";
-
 
 export const NormalSpacedToCamelCase = (str: string) => {
   let i = 0;
@@ -175,6 +174,45 @@ export const functionsRouter = createTRPCRouter({
       });
 
       return deletedFunction;
+    }),
+
+  deleteAllFunctionsByJobId: privateProcedure
+    .input(
+      z.object({
+        jobId: z.string().min(3).max(100),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const functions = await ctx.prisma.customFunction.findMany({
+        where: {
+          jobId: input.jobId,
+        },
+        include: {
+          parameters: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
+
+      await Promise.all(
+        functions.map(async (f) => {
+          await ctx.prisma.parameters.deleteMany({
+            where: {
+              customFunctionId: f.id,
+            },
+          });
+        })
+      );
+
+      const result = await ctx.prisma.customFunction.deleteMany({
+        where: {
+          jobId: input.jobId,
+        },
+      });
+
+      return result;
     }),
 
   getFunctionCountFromJobId: privateProcedure

@@ -8,6 +8,7 @@ import {
 import {
   ArrowLeftIcon,
   CheckIcon,
+  ExclamationTriangleIcon,
   GitHubLogoIcon,
 } from "@radix-ui/react-icons";
 import { type NextPage } from "next";
@@ -19,6 +20,7 @@ import { TooltipComponent } from "~/components/tooltip";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { LoadingSmall } from "~/components/loading";
+import { api } from "~/utils/api";
 
 const Connection: NextPage = () => {
   const router = useRouter();
@@ -119,6 +121,34 @@ const DeployServerContainer: React.FC<{ id: string }> = ({ id }) => {
   const [serverResponse, setServerResponse] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const { mutate: deleteAllFunctions, isLoading: deletingFunctions } =
+    api.functions.deleteAllFunctionsByJobId.useMutation({
+      onSuccess: () => {
+        toast.success(
+          "successfully deleted all functions from this instruction set"
+        );
+      },
+      onError: () => {
+        toast.error(
+          "Something went wrong deleting all functions from this instruction set!"
+        );
+      },
+    });
+
+  const { mutate: deleteAllVariableTypes, isLoading: deletingVariableTypes } =
+    api.variableTypes.deleteAllVariableTypesByJobId.useMutation({
+      onSuccess: () => {
+        toast.success(
+          "successfully deleted all variable types from this instruction set"
+        );
+      },
+      onError: () => {
+        toast.error(
+          "Something went wrong deleting all variable types from this instruction set!"
+        );
+      },
+    });
+
   const checkConnection = useCallback(() => {
     if (uri === "") {
       toast("Please enter a valid URL.", {
@@ -183,6 +213,22 @@ const DeployServerContainer: React.FC<{ id: string }> = ({ id }) => {
     setServerResponse("");
   }, [serverResponse]);
 
+  const Reset = () => {
+    const confirmationResult = confirm(
+      "Deleting all functions and variable types cannot be reverted - proceed?"
+    );
+
+    if (!confirmationResult) return;
+
+    deleteAllFunctions({
+      jobId: id,
+    });
+
+    deleteAllVariableTypes({
+      jobId: id,
+    });
+  };
+
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-neutral-700 bg-neutral-900 p-4">
       <div className="flex w-full select-none items-center gap-1 text-lg text-neutral-200">
@@ -243,6 +289,22 @@ const DeployServerContainer: React.FC<{ id: string }> = ({ id }) => {
             {loading ? <LoadingSmall /> : <p>Sync</p>}
           </button>
         </TooltipComponent>
+      </div>
+      <div className="flex flex-col gap-2 rounded-2xl border-2 border-dotted border-red-600 p-3">
+        <div className="flex items-center gap-1 font-semibold">
+          <ExclamationTriangleIcon className="h-5 w-5 translate-y-[2px] text-red-600" />
+          <p>Danger Zone</p>
+        </div>
+        <button
+          onClick={Reset}
+          className="rounded-lg bg-red-600 p-1 font-mono font-semibold transition duration-200 hover:bg-red-500"
+        >
+          {deletingFunctions || deletingVariableTypes ? (
+            <LoadingSmall />
+          ) : (
+            <p>Delete All Functions and Variable Types Forever</p>
+          )}
+        </button>
       </div>
     </div>
   );

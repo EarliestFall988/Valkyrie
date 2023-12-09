@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import randomColor from "randomcolor";
 
 export const VariableTypes = createTRPCRouter({
   createNewVariableType: privateProcedure
@@ -28,12 +29,19 @@ export const VariableTypes = createTRPCRouter({
         });
       }
 
+      const color = randomColor({
+        luminosity: "light",
+        seed: input.key,
+        format: "hex",
+      });
+
       const customVariableCreated = await ctx.prisma.variableType.create({
         data: {
           typeName: input.key,
           description: input.description ?? "",
           authorId: ctx.currentUser,
           jobId: input.jobId,
+          colorHex: color,
         },
       });
 
@@ -138,19 +146,19 @@ export const VariableTypes = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       if (!ctx.currentUser) throw new Error("User not authenticated");
 
-    //   const alreadyExists = await ctx.prisma.variableType.findFirst({
-    //     where: {
-    //       typeName: input.key,
-    //       jobId: input.jobId,
-    //     },
-    //   });
+      //   const alreadyExists = await ctx.prisma.variableType.findFirst({
+      //     where: {
+      //       typeName: input.key,
+      //       jobId: input.jobId,
+      //     },
+      //   });
 
-    //   if (alreadyExists) {
-    //     throw new TRPCError({
-    //       code: "BAD_REQUEST",
-    //       message: "Variable type already exists",
-    //     });
-    //   }
+      //   if (alreadyExists) {
+      //     throw new TRPCError({
+      //       code: "BAD_REQUEST",
+      //       message: "Variable type already exists",
+      //     });
+      //   }
 
       const customVariableCreated = await ctx.prisma.variableType.upsert({
         where: {
@@ -199,6 +207,22 @@ export const VariableTypes = createTRPCRouter({
       });
 
       return customVariableType;
+    }),
+
+  deleteAllVariableTypesByJobId: privateProcedure
+    .input(
+      z.object({
+        jobId: z.string().min(3).max(100),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.prisma.variables.deleteMany({
+        where: {
+          jobId: input.jobId,
+        },
+      });
+
+      return result;
     }),
 
   getVariableTypeCountFromJobId: privateProcedure

@@ -7,6 +7,8 @@ import { CamelCaseToNormal } from "~/pages/jobs/[id]/instructions";
 import { LoadingSmall } from "~/components/loading";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { SignalSlashIcon } from "@heroicons/react/24/outline";
+import { useMemo, useState } from "react";
+import { type VariableType } from "@prisma/client";
 
 // const handleStyle = {
 //   top: 10,
@@ -22,11 +24,23 @@ type nodeData = {
 export const CustomFunction = (props: nodeData) => {
   // console.log(props.data);
 
+  const [varTypes, setVarTypes] = useState<VariableType[]>([]);
+
   const [animationParent] = useAutoAnimate();
 
   const { data, isLoading, isError } = api.functions.getFunctionById.useQuery({
     id: props.data.id,
   });
+
+  const { data: varTypeData } =
+    api.variableTypes.getAllVariableTypesByJob.useQuery({
+      jobId: data?.jobId ?? "",
+    });
+
+  useMemo(() => {
+    const varTypeDataResult = varTypeData ?? [];
+    setVarTypes(varTypeDataResult);
+  }, [varTypeData]);
 
   // if (isloading)
   //   return (
@@ -53,28 +67,38 @@ export const CustomFunction = (props: nodeData) => {
       const rightTopLocation = rightIndex * 20 + 50;
       const rightWordLocation = 5 - rightIndex;
 
-      let backgroundColor = "";
+      let backgroundColor = "#00000";
 
-      if (parameter.type === "text") {
-        backgroundColor = "red";
+      const color = varTypes.find(
+        (x) => x.typeName === parameter.type
+      )?.colorHex;
+
+      if (color) {
+        backgroundColor = color;
       }
 
-      if (parameter.type === "integer") {
-        backgroundColor = "blue";
-      }
+      // console.log(parameter);
 
-      if (parameter.type === "boolean") {
-        backgroundColor = "green";
-      }
+      // if (parameter.type === "text") {
+      //   backgroundColor = "red";
+      // }
 
-      if (parameter.type === "decimal") {
-        backgroundColor = "yellow";
-      }
+      // if (parameter.type === "integer") {
+      //   backgroundColor = "blue";
+      // }
+
+      // if (parameter.type === "boolean") {
+      //   backgroundColor = "green";
+      // }
+
+      // if (parameter.type === "decimal") {
+      //   backgroundColor = "yellow";
+      // }
 
       if (
-        parameter.io === "input" ||
-        parameter.io === "in" ||
-        parameter.io === "ref"
+        parameter.io.toLowerCase() === "input" ||
+        parameter.io.toLowerCase() === "in" ||
+        parameter.io.toLowerCase() === "ref"
       ) {
         // 👈 ref is for both input and ouput
         const res = (
@@ -90,9 +114,11 @@ export const CustomFunction = (props: nodeData) => {
                 backgroundColor: backgroundColor,
               }}
             >
-              <div className="pointer-events-none relative w-[100px] -translate-y-[45%] translate-x-2 font-mono text-[12px] text-neutral-200">
-                {CamelCaseToNormal(parameter.name)}
-              </div>
+              <TooltipComponent content={parameter.type} side="left">
+                <div className="pointer-events-none relative w-[150px] -translate-y-[45%]  translate-x-2 font-mono text-[10px] text-neutral-200">
+                  {CamelCaseToNormal(parameter.name)} ({parameter.type})
+                </div>
+              </TooltipComponent>
             </Handle>
           </div>
         );
@@ -101,9 +127,9 @@ export const CustomFunction = (props: nodeData) => {
       }
 
       if (
-        parameter.io === "output" ||
-        parameter.io === "out" ||
-        parameter.io === "ref"
+        parameter.io.toLowerCase() === "output" ||
+        parameter.io.toLowerCase() === "out" ||
+        parameter.io.toLowerCase() === "ref"
       ) {
         //👈 ref is for both input and output
         const res = (
@@ -119,9 +145,11 @@ export const CustomFunction = (props: nodeData) => {
                 backgroundColor: backgroundColor,
               }}
             >
-              <div className="pointer-events-none relative w-[100px] -translate-x-[105px] -translate-y-[45%] text-right font-mono text-[12px] text-neutral-200">
-                {CamelCaseToNormal(parameter.name)}
-              </div>
+              <TooltipComponent content={parameter.type} side="right">
+                <div className="pointer-events-none relative w-[100px] -translate-x-[105px] -translate-y-[45%]  text-right font-mono text-[10px] text-neutral-200">
+                  {CamelCaseToNormal(parameter.name)} ({parameter.type})
+                </div>
+              </TooltipComponent>
             </Handle>
           </div>
         );

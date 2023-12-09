@@ -4,11 +4,15 @@ import { type NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BackButtonComponent } from "~/components/backButton";
 import { Loading } from "~/components/loading";
 import { TooltipComponent } from "~/components/tooltip";
 import { api } from "~/utils/api";
+
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 
 const VariableTypesList: NextPage = () => {
   const title = "Managing Variable Types";
@@ -26,6 +30,10 @@ const VariableTypesList: NextPage = () => {
       searchTerm: searchTerm,
       jobId: id ?? "",
     });
+
+  useEffect(() => {
+    console.log(data);
+  }, [data]);
 
   return (
     <>
@@ -83,15 +91,33 @@ const VariableTypesList: NextPage = () => {
               {data.map((variableType) => (
                 <Link
                   href={`/jobs/${id}/vartype/${variableType.id}`}
-                  className="w-full border-x border-b border-neutral-700 p-2 transition duration-200 hover:bg-neutral-800"
+                  className="flex w-full items-center justify-between border-x border-b border-neutral-700 p-2 transition duration-200 hover:bg-neutral-800"
                   key={variableType.id}
                 >
-                  <p className="text-lg font-semibold">
-                    {variableType.typeName}
-                  </p>
-                  <p className="font-mono tracking-tight text-neutral-400">
-                    {variableType.description}
-                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <div
+                      style={{
+                        backgroundColor: variableType.colorHex,
+                        width: "1em",
+                        height: "1em",
+                        borderRadius: "100%",
+                        translate: "transform -translate-y-2/3",
+                      }}
+                    />
+                    <div>
+                      <p className="text-lg font-semibold">
+                        {variableType.typeName}
+                      </p>
+                      <p className="font-mono tracking-tight text-neutral-400">
+                        {variableType.description}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-mono text-neutral-400">
+                      {dayjs(variableType.updatedAt).fromNow()}
+                    </p>
+                  </div>
                 </Link>
               ))}
             </>

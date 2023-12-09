@@ -2,6 +2,8 @@ import type { NextApiHandler, NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "~/server/db";
 import { type Parameters, type CustomFunction } from "@prisma/client";
 
+import randomColor from "randomcolor";
+
 type SyncInputParamType = {
   Name: string;
   Type: string;
@@ -73,6 +75,17 @@ const SyncFunctions: NextApiHandler = async (
     return;
   }
 
+  const instructionSet = await prisma.job.findFirst({
+    where: {
+      id: instructionId,
+    },
+  });
+
+  if (!instructionSet) {
+    res.status(404).json({ message: "Instruction set not found" });
+    return;
+  }
+
   const functionDefs = syncData.Functions ?? [];
   const typeDefs = syncData.CustomTypes ?? [];
 
@@ -80,44 +93,53 @@ const SyncFunctions: NextApiHandler = async (
   console.log("instruction id: ", instructionId);
   //👇👇 dumb limitation of prisma, can't do a bulk upsert *sigh* so we have to do it manually
   if (typeDefs.length > 0) {
-    typeDefs.map(async (t) => {
-      const customType = await prisma.variableType.findFirst({
-        where: {
-          AND: [
-            {
+    await Promise.all(
+      typeDefs.map(async (t) => {
+        console.log("t: ", t);
+
+        const customType = await prisma.variableType.findFirst({
+          where: {
+            AND: [
+              {
+                jobId: instructionId,
+              },
+              {
+                typeName: t.Name,
+              },
+            ],
+          },
+        });
+
+        if (!customType) {
+          const color = randomColor({
+            luminosity: "light",
+            seed: t.Name,
+            format: "hex",
+          });
+
+          await prisma.variableType.create({
+            data: {
+              description: t.Description,
+              typeName: t.Name,
+              jobId: instructionId,
+              authorId: "apikey" + apiKey,
+              colorHex: color,
+            },
+          });
+        } else {
+          await prisma.variableType.update({
+            where: {
+              id: customType.id,
+            },
+            data: {
+              description: t.Description,
+              typeName: t.Name,
               jobId: instructionId,
             },
-            {
-              typeName: t.Name,
-            },
-          ],
-        },
-      });
-
-      if (!customType) {
-        await prisma.variableType.create({
-          data: {
-            description: t.Description,
-            typeName: t.Name,
-            jobId: instructionId,
-            authorId: "apikey" + apiKey,
-          },
-        });
-      } else {
-        await prisma.variableType.update({
-          where: {
-            id: customType.id,
-          },
-          data: {
-            description: t.Description,
-            typeName: t.Name,
-            jobId: instructionId,
-          },
-        });
-      }
-
-      return res;
-    });
+          });
+        }
+      })
+    );
   }
 
   if (functionDefs.length > 0) {
@@ -128,17 +150,6 @@ const SyncFunctions: NextApiHandler = async (
         console.log("param: ", p);
       });
     });
-
-    const instructionSet = await prisma.job.findFirst({
-      where: {
-        id: instructionId,
-      },
-    });
-
-    if (!instructionSet) {
-      res.status(404).json({ message: "Instruction set not found" });
-      return;
-    }
 
     //👇👇 yup gotta do it again... no upsert here either. Prisma only allows upserts on unique fields, which I would make the name a unique field, but
     // that of course would be too easy. So we have to do it manually. I'm sure there's a way to do this with a raw query, but I'm lazy and this works
@@ -227,130 +238,126 @@ const SyncFunctions: NextApiHandler = async (
     // })
 
     //transaction - either all the functions get updated or none of them do
-    await prisma.$transaction(async (tx) => {
-      await Promise.all(
-        pFunctions.map(async ({ func, params, newParams, oldParams }) => {
-          console.log("\n\t\tfunctions not 4 in db: ", functionsNotInDb);
+    // await prisma.$transaction(async (tx) => {
+    await Promise.all(
+      pFunctions.map(async ({ func, params, newParams, oldParams }) => {
+        // console.log("\n\tfunctions not in db: ", functionsNotInDb);
+        // console.log("\n\tfunctions in db: ", pFunctions);
 
-          //update the function data
-          await tx.customFunction.update({
-            where: {
-              id: func.id,
-            },
+        //update the function data
+        await prisma.customFunction.update({
+          where: {
+            id: func.id,
+          },
+          data: {
+            name: func.name,
+            description: func.description,
+            jobId: func.jobId,
+          },
+        });
+
+        // create new parameters
+
+        newParams.map(async (p) => {
+          return await prisma.parameters.create({
             data: {
-              name: func.name,
-              description: func.description,
-              jobId: func.jobId,
-            },
-          });
-
-          // update parameters we want to keep
-          await Promise.all(
-            params.map(async (p) => {
-              return await tx.parameters.update({
-                where: {
-                  id: p.id,
+              default: "",
+              description: p.Description,
+              name: p.Name,
+              io: p.IO,
+              type: p.Type,
+              required: false,
+              customFunction: {
+                connect: {
+                  id: func.id,
                 },
-                data: {
-                  default: p.default,
-                  description: p.description,
-                  name: p.name,
-                  io: p.io,
-                  type: p.type,
-                  required: p.required,
-                },
-              });
-            })
-          );
-
-          // create new parameters
-          await Promise.all(
-            newParams.map(async (p) => {
-              return await tx.parameters.create({
-                data: {
-                  default: "",
-                  description: "",
-                  name: p.Name,
-                  io: "",
-                  type: p.Type,
-                  required: false,
-                  customFunction: {
-                    connect: {
-                      id: func.id,
-                    },
-                  },
-                },
-              });
-            })
-          );
-
-          //remove parameters we don't want
-          await tx.parameters.deleteMany({
-            where: {
-              id: {
-                in: oldParams,
               },
             },
           });
+        });
 
-          // return res; //👈 results of the transaction
-        })
-      );
-    });
+        // update parameters we want to keep
+        params.map(async (p) => {
+          return await prisma.parameters.update({
+            where: {
+              id: p.id,
+            },
+            data: {
+              default: p.default,
+              description: p.description,
+              name: p.name,
+              io: p.io,
+              type: p.type,
+              required: p.required,
+            },
+          });
+        });
+
+        //remove parameters we don't want
+        await prisma.parameters.deleteMany({
+          where: {
+            id: {
+              in: oldParams,
+            },
+          },
+        });
+
+        // return res; //👈 results of the transaction
+      })
+    );
+    // });
 
     console.log("creating remaining functions");
 
-    await prisma.$transaction(async (tx) => {
-      await Promise.all(
-        functionsNotInDb.map(async (f) => {
-          //create the function
-          console.log("creating function " + f.Name);
-          const func = await tx.customFunction.create({
-            data: {
-              name: f.Name,
-              jobId: instructionId,
-              description: "",
-              authorId: instructionSet.authorId, //scary...
-            },
-          });
+    // await prisma.$transaction(async (tx) => {
+    await Promise.all(
+      functionsNotInDb.map(async (f) => {
+        //create the function
+        console.log("creating function " + f.Name);
+        const func = await prisma.customFunction.create({
+          data: {
+            name: f.Name,
+            jobId: instructionId,
+            description: "",
+            authorId: instructionSet.authorId, //scary...
+          },
+        });
 
-          if (!f.Parameters) {
-            return res;
-          }
+        if (!f.Parameters) {
+          return res;
+        }
 
-          //create the parameters
-          await Promise.all(
-            f.Parameters?.map(async (p) => {
-              console.log("param: ", p);
+        //create the parameters
+        await Promise.all(
+          f.Parameters?.map(async (p) => {
+            console.log("param: ", p);
 
-              return await tx.parameters.create({
-                data: {
-                  default: "",
-                  description: "",
-                  name: p.Name,
-                  io: p.IO,
-                  type: p.Type,
-                  required: false,
-                  customFunction: {
-                    connect: {
-                      id: func.id,
-                    },
+            return await prisma.parameters.create({
+              data: {
+                default: "",
+                description: p.Description,
+                name: p.Name,
+                io: p.IO,
+                type: p.Type,
+                required: false,
+                customFunction: {
+                  connect: {
+                    id: func.id,
                   },
                 },
-              });
-            })
-          );
+              },
+            });
+          })
+        );
+      })
+    );
+    // });
 
-          // return res; //👈 results of the transaction
-        })
-      );
-    });
-
-    console.log("functions not in db: ", functionsNotInDb);
-    console.log("functions in db: ", pFunctions);
+    // console.log("functions not in db: ", functionsNotInDb);
+    // console.log("functions in db: ", pFunctions);
   }
 
-  res.status(200);
+  res.status(200).json({ message: "ok" });
 };
 
 export default SyncFunctions;

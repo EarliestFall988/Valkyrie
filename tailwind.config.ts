@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       backgroundImage: {
-        'hero-pattern': "url('/img/hero-pattern.svg')",
+        "hero-pattern": "url('/img/hero-pattern.svg')",
       },
       animation: {
         fade: "fade 0.5s ease-in-out",
@@ -31,7 +31,6 @@ export default {
         fadeSlideUp: {
           "0%": { opacity: "0", transform: "translateY(2px)" },
           "100%": { opacity: "1", transform: "translateY(0px)" },
-          
         },
         toastSlide: {
           "0%": { opacity: "0", transform: "translateY(120%)" },
