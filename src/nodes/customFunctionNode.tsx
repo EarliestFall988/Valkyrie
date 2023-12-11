@@ -7,7 +7,7 @@ import { CamelCaseToNormal } from "~/pages/jobs/[id]/instructions";
 import { LoadingSmall } from "~/components/loading";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { SignalSlashIcon } from "@heroicons/react/24/outline";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type VariableType } from "@prisma/client";
 
 // const handleStyle = {
@@ -101,13 +101,20 @@ export const CustomFunction = (props: nodeData) => {
         parameter.io.toLowerCase() === "ref"
       ) {
         // 👈 ref is for both input and ouput
+
+        const paramInstanceId =
+          props.data.parameters.find((x) => x.id === parameter.id)
+            ?.instanceId ?? "";
+
+        // console.log(paramInstanceId);
+
         const res = (
           <div key={parameter.id}>
             <Handle
               key={parameter.id}
               type="target"
               position={Position.Left}
-              id={parameter.id}
+              id={paramInstanceId}
               style={{
                 top: leftTopLocation,
                 border: "1px solid black",
@@ -131,6 +138,13 @@ export const CustomFunction = (props: nodeData) => {
         parameter.io.toLowerCase() === "out" ||
         parameter.io.toLowerCase() === "ref"
       ) {
+        const paramInstanceId =
+          props.data.parameters.find((x) => x.id === parameter.id)
+            ?.instanceId ?? "";
+
+        const finalId = "pOut " + parameter.id + " " + paramInstanceId;
+        // console.log(finalId);
+
         //👈 ref is for both input and output
         const res = (
           <div key={parameter.id}>
@@ -138,7 +152,7 @@ export const CustomFunction = (props: nodeData) => {
               key={parameter.id + "out"}
               type="source"
               position={Position.Right}
-              id={parameter.id}
+              id={finalId}
               style={{
                 top: rightTopLocation,
                 border: "1px solid black",

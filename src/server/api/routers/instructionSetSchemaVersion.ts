@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
+import { TRPCError } from "@trpc/server";
 
 const key = "some key"; //TODO: make this an actually good key that we store in env...
 const host = process.env.SERVER_HOST;
@@ -15,8 +16,6 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-
-
       const authorId = ctx.currentUser;
 
       const job = await ctx.prisma.job.findFirst({
@@ -33,6 +32,8 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
 
       console.log(uri);
 
+      let successful = false;
+
       const data = await fetch(uri, {
         method: "POST",
         body: JSON.stringify({
@@ -40,14 +41,23 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
           key: key,
         }),
         headers: {
-          "Content-Type": "application/json",
+          "x-api-key": key,
+          "x-instruction-id": input.jobId,
         },
       }).then((res) => {
         if (res.status !== 200) {
-          throw new Error("Failed to fetch data");
+          console.log("error", res.statusText);
+          return "failed to fetch data";
         }
+        successful = true;
         return res.text();
       });
+
+      if (!successful)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch data",
+        });
 
       const newVersion = await ctx.prisma.instructionSetSchemaVersion.create({
         data: {
@@ -56,7 +66,7 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
           productionBuild: input.productionBuild,
           jobid: input.jobId,
           data: data,
-          authorId
+          authorId,
         },
       });
 
@@ -137,8 +147,7 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
       return result;
     }),
 
-  
-    getCountByJobsId: privateProcedure
+  getCountByJobsId: privateProcedure
     .input(
       z.object({
         jobId: z.string(),

@@ -160,8 +160,6 @@ export const Flow: React.FC<{
 
       const data = JSON.parse(rawData) as nodeData;
 
-      // console.log(data);
-
       const position = reactFlowInstance?.project({
         x: event.clientX - (reactFlowBounds?.left ?? 0),
         y: event.clientY - (reactFlowBounds?.top ?? 0),
@@ -174,6 +172,10 @@ export const Flow: React.FC<{
           ...data,
           jobId: id,
         };
+
+        console.log(data);
+
+        console.log("new var ", data.id);
 
         const newNode = {
           id: getId(),
@@ -190,6 +192,14 @@ export const Flow: React.FC<{
       }
 
       if (data.nodeType === "customFunction") {
+        const data = JSON.parse(rawData) as functionMetaData;
+
+        // data.parameters = data.parameters.map((param) => {
+        //   return {
+        //     ...param,
+        //   };
+        // });
+
         const newNode = {
           id: getId(),
           type: data.nodeType,
@@ -197,7 +207,7 @@ export const Flow: React.FC<{
             x: position?.x ?? 0,
             y: position?.y ?? 0,
           },
-          data: JSON.parse(rawData) as functionMetaData,
+          data,
         };
 
         // setNodes((nds) => nds.concat(newNode));

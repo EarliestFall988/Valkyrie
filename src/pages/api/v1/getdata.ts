@@ -11,6 +11,7 @@ const key = "some key"; //TODO: put this in the env file
 
 type VariableType = {
   name: string;
+  id: string;
   type: string;
   value: string;
 };
@@ -55,37 +56,18 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     return;
   }
 
-  const body = req.body as string;
-  // console.log(body);
-
-  if (body === undefined || body === null || body === "") {
-    res.status(400).json({ message: "Invalid body" });
-    return;
-  }
-
-  const result = JSON.parse(body) as ContentRequestType;
-
   const versionId = req.query.version as string | undefined;
+  const k = req.headers["x-api-key"] as string;
+  const instructionId = req.headers["x-instruction-id"] as string;
 
-  let instructionId = result.id;
-  let k = result.key;
-
-  // console.log("body result", result);
-
-  let usedHeader = false;
-
-  if (k === undefined || k === null || k === "") {
-    k = req.headers["x-api-key"] as string;
-    usedHeader = true;
+  if (k == "" || k == null) {
+    res.status(403).json({ message: "Invalid key" });
+    return;
   }
 
   if (k !== key) {
     res.status(403).json({ message: "Invalid key" });
     return;
-  }
-
-  if (usedHeader) {
-    instructionId = req.headers["x-instruction-id"] as string;
   }
 
   if (instructionId === null || instructionId === "") {
@@ -94,10 +76,31 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   if (!versionId) {
+    const instructionSetVersion =
+      await prisma.instructionSetSchemaVersion.findFirst({
+        where: {
+          jobid: instructionId,
+          productionBuild: true,
+        },
+        orderBy: {
+          updatedAt: "desc",
+        },
+      });
+
+    if (instructionSetVersion != null)
+      return res.status(200).send(instructionSetVersion.data);
+    else
+      return res.status(404).json({
+        message:
+          "No production instruction set found. Please build your instruction set before fetching data.",
+      });
+  }
+
+  if (versionId && versionId !== "create") {
     const version = await prisma.instructionSetSchemaVersion.findFirst({
       where: {
         jobid: instructionId,
-        productionBuild: true,
+        id: versionId,
       },
       orderBy: {
         updatedAt: "desc",
@@ -105,30 +108,9 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     if (version != null) return res.status(200).send(version.data);
-    else
-      return res.status(404).json({
-        message:
-          "No production build found. Please build your instruction set before fetching data.",
-      });
   }
 
-  if (versionId) {
-    if (versionId !== "create") {
-      const version = await prisma.instructionSetSchemaVersion.findFirst({
-        where: {
-          jobid: instructionId,
-          id: versionId,
-        },
-        orderBy: {
-          updatedAt: "desc",
-        },
-      });
-
-      if (version != null) return res.status(200).send(version.data);
-    }
-  }
-
-  // console.log("name", instructionId);
+  //create a new version ... based on the current structure of the instruction set
 
   const instructions = await prisma.job.findFirst({
     where: {
@@ -140,31 +122,51 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
           name: "asc",
         },
       },
+      customFunctions: {
+        orderBy: {
+          name: "asc",
+        },
+      },
     },
   });
 
-  if (instructions === null) {
+  if (!instructions || instructions === null) {
     res.status(404).json({ message: "Not found" });
     return;
   }
 
+  // return res.json(JSON.parse(instructions.data));
+
+  const instructionVariables = instructions.variables;
+  const instructionFunctions = instructions.customFunctions;
+
   const instructionData = instructions.data;
+
+  if (
+    instructions.data === null ||
+    instructions.data === undefined ||
+    instructions.data === ""
+  ) {
+    console.log("no data found");
+    res.status(500).json({ message: "No data found" });
+    return;
+  }
 
   const nodeAndEdgeData = JSON.parse(instructionData) as {
     nodes: Node[];
     edges: Edge[];
   };
 
-  const variableEdges = nodeAndEdgeData.edges.filter((n) => {
+  const dataEdges = nodeAndEdgeData.edges.filter((n) => {
     const res = n.sourceHandle?.startsWith("t") && n.targetHandle === "in";
     return !res;
   });
 
-  // console.log(variableEdges);
+  console.log(dataEdges);
 
-  const connectedParamIds = variableEdges
+  const connectedParamIds = dataEdges
     .map((e) => {
-      const paramId = e.sourceHandle?.startsWith("vout")
+      const paramHandleId = e.sourceHandle?.startsWith("vout")
         ? e.targetHandle
         : e.sourceHandle;
 
@@ -172,23 +174,18 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
         ? e.targetHandle
         : e.sourceHandle;
 
-      // console.log(e);
+      console.log(e);
 
-      // console.log("varid ", varHandleId?.split(" ")[1]?.trim());
+      console.log("varid ", varHandleId?.split(" ")[1]?.trim());
       const varId = varHandleId?.split(" ")[1]?.trim();
+
+      const paramId = paramHandleId?.split(" ")[1]?.trim();
 
       return { paramId, varId };
     })
     .filter((e) => e !== undefined && e !== null);
 
-  if (
-    connectedParamIds.length === 0 ||
-    connectedParamIds === undefined ||
-    connectedParamIds === null
-  ) {
-    res.status(500).json({ message: "No variables connected to nodes" });
-    return;
-  }
+  console.log("connected param ids ", connectedParamIds);
 
   const params = await prisma.parameters.findMany({
     where: {
@@ -198,7 +195,7 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     },
   });
 
-  // console.log("params ", params);
+  console.log("params ", params);
 
   const variables = await prisma.variables.findMany({
     where: {
@@ -208,13 +205,18 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     },
   });
 
-  // console.log("vars ", variables);
+  console.log("vars ", variables);
 
   const paramMap = new Map<string, string>();
 
   connectedParamIds.forEach((e) => {
+    // console.log(e);
+
     const param = params.find((p) => p.id === e.paramId);
     const variable = variables.find((v) => v.id === e.varId);
+
+    // console.log(param);
+    // console.log(variable);
 
     if (param === undefined || variable === undefined) {
       return;
@@ -265,6 +267,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
       return fun !== undefined;
     })
     .map((f) => {
+      // console.log(f);
+
       return {
         name: f.name,
         parameters: f.parameters.map((p) => {
@@ -373,7 +377,7 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     transitions: transitions,
   } as InstructionSetType;
 
-  console.log("instruction set ", instructionSet);
+  // console.log("instruction set ", instructionSet);
 
   res.status(200).json(instructionSet);
 };

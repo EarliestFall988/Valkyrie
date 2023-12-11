@@ -15,6 +15,9 @@ type nodeData = {
 export const VariableNode = (props: nodeData) => {
   const [backgroundColor, setBackgroundColor] = useState<string>("white");
 
+
+  console.log(props.data.id);
+
   const { data: varTypeData } =
     api.variableTypes.getAllVariableTypesByJob.useQuery({
       jobId: props.data.jobId,

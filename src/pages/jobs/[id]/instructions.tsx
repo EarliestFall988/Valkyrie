@@ -20,7 +20,7 @@ import {
   type Variables,
   type Job,
   type Parameters,
-  VariableType,
+  type VariableType,
 } from "@prisma/client";
 import { type NextPage } from "next";
 import { useRouter } from "next/router";
@@ -188,9 +188,19 @@ const JobPage: NextPage = () => {
       })
     );
 
+    //filter duplicate nodes out of the list of nodes
+
+    const finalNodes = nodes.filter(
+      (n, i) => nodes.findIndex((x) => x.id === n.id) === i
+    );
+
+    const finalEdges = edges.filter(
+      (e, i) => edges.findIndex((x) => x.id === e.id) === i
+    );
+
     const newData = {
-      nodes,
-      edges,
+      nodes: finalNodes,
+      edges: finalEdges,
     };
 
     const final = JSON.stringify(newData);
@@ -272,6 +282,16 @@ const Ribbon: React.FC<{
   save: () => void;
   saving: boolean;
 }> = ({ job, errorLoading, loading, save, saving }) => {
+  document.addEventListener("keydown", function (e) {
+    if (
+      e.key === "s" &&
+      (navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)
+    ) {
+      e.preventDefault();
+      save();
+    }
+  });
+
   return (
     <div className="fixed top-0 z-20 flex w-full gap-2 border-b border-neutral-700 bg-neutral-800/50 p-2 backdrop-blur-lg">
       <BackButtonComponent fallbackRoute="/dashboard" forceReload />
@@ -345,6 +365,7 @@ const Ribbon: React.FC<{
                     content="Save Changes"
                     description="Save changes to the cloud and push changes the connected device."
                     side="top"
+                    keyboardShortcut="ctrl + S / cmd + S"
                   >
                     <button
                       onClick={() => {
@@ -753,6 +774,9 @@ const VariableItem: React.FC<{
               <p className="font-semibold">Delete</p>
             </button>
           </div>
+          <p className="font-mono text-xs tracking-tight text-neutral-400">
+            {v.id}
+          </p>
         </div>
       )}
     </div>
@@ -859,21 +883,40 @@ export const CamelCaseToNormal = (str: string) => {
   return str;
 };
 
+type ParamType = Parameters & { instanceId: string };
+
+type funcType = CustomFunction & { parameters: Parameters[] };
+
 const FunctionItem: React.FC<{
-  func: CustomFunction & { parameters: Parameters[] };
+  func: funcType
 }> = ({ func }) => {
+
   const onDragStart = (
     event: React.DragEvent<HTMLDivElement>,
-    f: CustomFunction & { parameters: Parameters[] }
+    f: funcType
   ) => {
     if (deleting) return;
+
+    const paramResult = [] as ParamType[]
+    
+    f.parameters.forEach((p) => {
+      console.log("paramId: " + p.id);
+
+      const instanceId = getId();
+
+      paramResult.push({
+        ...p,
+        instanceId,
+      });
+    });
+
 
     const data = JSON.stringify({
       id: f.id,
       nodeType: "customFunction",
       label: f.name,
       description: f.description,
-      parameters: f.parameters,
+      parameters: paramResult,
     });
 
     event.dataTransfer.setData("application/reactflow", data);
@@ -966,6 +1009,7 @@ export type ParameterType = {
   type: "text" | "integer" | "decimal" | "boolean";
   io: "input" | "output";
   id: string;
+  instanceId: string;
 };
 
 const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
@@ -982,18 +1026,22 @@ const NewFunctionDialog: FC<{ children: ReactNode; jobId: string }> = ({
   const newInParam = () => {
     const id = getId();
 
+    const instanceId = getId();
+
     setInParams((params) => [
       ...params,
-      { name: "", type: "text", io: "input", id },
+      { name: "", type: "text", io: "input", id, instanceId },
     ]);
   };
 
   const newOutParameter = () => {
     const id = getId();
 
+    const instanceId = getId();
+
     setOutParams((params) => [
       ...params,
-      { name: "", type: "text", io: "output", id },
+      { name: "", type: "text", io: "output", id, instanceId },
     ]);
   };
 
