@@ -2,10 +2,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import type { Edge, Node } from "reactflow";
 import { prisma } from "~/server/db";
 
-type ContentRequestType = {
-  key: string;
-  id: string;
-};
+// type ContentRequestType = {
+//   key: string;
+//   id: string;
+// };
 
 const key = "some key"; //TODO: put this in the env file
 
@@ -39,7 +39,7 @@ type TransitionType = {
 };
 
 type InstructionSetType = {
-  name: string;
+  Title: string;
   variables: VariableType[];
   functions: FunctionType[];
   states: StateType[];
@@ -59,6 +59,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   const versionId = req.query.version as string | undefined;
   const k = req.headers["x-api-key"] as string;
   const instructionId = req.headers["x-instruction-id"] as string;
+
+  const tag = req.headers["x-tag"] as string | undefined;
 
   if (k == "" || k == null) {
     res.status(403).json({ message: "Invalid key" });
@@ -134,12 +136,14 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
 
   const instructionData = instructions.data;
 
+  // console.log(instructionData);
+
   if (
     instructions.data === null ||
     instructions.data === undefined ||
     instructions.data === ""
   ) {
-    console.log("no data found");
+    // console.log("no data found");
     res.status(500).json({ message: "No data found" });
     return;
   }
@@ -166,11 +170,11 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
         ? e.targetHandle
         : e.sourceHandle;
 
-      console.log(e);
+      // console.log(e);
 
       // console.log("varid ", varHandleId?.split(" ")[1]?.trim());
 
-      console.log(varHandleId);
+      // console.log(varHandleId);
 
       const varDbId = varHandleId?.split(" ")[1]?.trim();
       const varInstanceId = varHandleId?.split(" ")[2]?.trim();
@@ -178,10 +182,26 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
       const paramDbId = paramHandleId?.split(" ")[1]?.trim();
       const paramInstanceId = paramHandleId?.split(" ")[2]?.trim();
 
-      return { paramDbId, varDbId, paramInstanceId, varInstanceId };
+      const source = e.target;
+      const target = e.source;
+
+      return {
+        paramDbId,
+        varDbId,
+        paramInstanceId,
+        varInstanceId,
+        source,
+        target,
+      };
     })
     .filter(
-      (e) => e?.paramDbId && e.varDbId && e.paramInstanceId && e.varInstanceId
+      (e) =>
+        e?.paramDbId &&
+        e.varDbId &&
+        e.paramInstanceId &&
+        e.varInstanceId &&
+        e.source &&
+        e.target
     );
 
   // console.log("connected param ids ", varParamConnectionIds);
@@ -218,6 +238,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     dbId: string;
     instanceId: string;
     variableName: string;
+    source: string;
+    target: string;
   }[];
 
   varParamConnectionIds.forEach((e) => {
@@ -237,10 +259,12 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
       dbId: e.paramDbId ?? "",
       instanceId: e.paramInstanceId ?? "",
       variableName: variable.name.trim(),
+      source: e.source,
+      target: e.target,
     });
   });
 
-  console.log("connections", connections);
+  // console.log("connections", connections);
 
   const funcs = await prisma.customFunction.findMany({
     where: {
@@ -255,32 +279,32 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     },
   });
 
-  let containsStart = false;
-  let containsExit = false;
-
-  const functionInstanceIds = [] as {
-    id: string;
+  const functionData = [] as {
+    name: string;
+    dbId: string;
+    fId: string;
     instanceId: string;
-    used: boolean;
+    params: { name: string; type: string; id: string }[];
   }[];
 
-  const matchValidFunctions = funcs.filter((f) => {
-    if (f.name.toLowerCase().trim() === "start") {
-      containsStart = true;
-      return false;
-    }
-    if (f.name.toLowerCase().trim() === "exit") {
-      containsExit = true;
-      return false;
-    }
+  nodeAndEdgeData.nodes.forEach((n) => {
+    const fun = funcs.find((f) => {
+      const id = n.id;
 
-    const fun = nodeAndEdgeData.nodes.find((n) => {
       const data = n.data as { label: string; instanceId: string };
       if (data.label.trim() === f.name.trim()) {
-        functionInstanceIds.push({
-          id: f.id,
+        functionData.push({
+          name: data.label.trim(),
+          dbId: f.id,
+          fId: id,
           instanceId: data.instanceId,
-          used: false,
+          params: f.parameters.map((p) => {
+            return {
+              name: p.name.trim(),
+              type: p.type,
+              id: p.id,
+            };
+          }),
         });
 
         return true && data.instanceId;
@@ -290,54 +314,31 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     return fun !== undefined && fun !== null;
   });
 
-  console.log("function instance ids", functionInstanceIds);
+  console.log("function instance ids", functionData);
 
-  const functions = functionInstanceIds
+  const functions = functionData
     .map((ins) => {
-      const f = matchValidFunctions.find((f) => f.id === ins.id);
-      if (f === undefined) return null;
-
-      ins.used = true;
 
       return {
-        name: f.name + " " + ins.instanceId,
-        parameters: f.parameters.map((p) => {
+        name: ins.name + " " + ins.instanceId,
+        parameters: ins.params.map((p) => {
           return {
             name: p.name.trim(),
             type: p.type,
             connectVar:
               connections.find((c) => {
                 return (
-                  c.dbId === p.id &&
-                  c.name === p.name &&
-                  c.instanceId === ins.instanceId
+                  (c.dbId === p.id && c.source == ins.fId) ||
+                  c.target == ins.fId
                 );
               })?.variableName ?? "",
           } as InputParamType;
         }),
-      } as FunctionType;
+      };
     })
-    .filter((f) => f !== null) as FunctionType[];
+    .filter((f) => f !== null);
 
   const states = functions.map((f) => {
-    // let type = "state";
-    // if (f.name.toLowerCase().trim() === "start") {
-    //   containsStart = true;
-    //   return {
-    //     name: "s",
-    //     type: "start",
-    //     function: "Continue",
-    //   };
-    // }
-    // if (f.name.toLowerCase().trim() === "exit") {
-    //   containsExit = true;
-    //   return {
-    //     name: "exit state",
-    //     type: "fallback",
-    //     function: "Continue",
-    //   };
-    // }
-
     return {
       type: "state",
       name: f.name.trim() + " state",
@@ -345,35 +346,48 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     } as StateType;
   });
 
-  states.push({
-    name: "Start state",
-    type: "start",
-    function: "Continue",
-  });
-
-  states.push({
-    name: "Exit state",
-    type: "fallback",
-    function: "Continue",
-  });
-
   functions.push({
     name: "Continue",
     parameters: [],
   });
 
-  if (!containsStart) {
+  let startFunctionCount = 0;
+  let exitFunctionCount = 0;
+
+  functions.forEach((x) => {
+    if (x.name.toLowerCase().trim().split(" ")[0] === "start") {
+      startFunctionCount++;
+    }
+    if (x.name.toLowerCase().trim().split(" ")[0] === "exit") {
+      exitFunctionCount++;
+    }
+  });
+
+  if (startFunctionCount === 0) {
     res.status(500).json({ message: "No start function found" });
     return;
   }
 
-  if (!containsExit) {
+  if (startFunctionCount > 1) {
+    res.status(500).json({ message: "More than one start function found" });
+    return;
+  }
+
+  if (exitFunctionCount === 0) {
     res.status(500).json({ message: "No exit function found" });
     return;
   }
 
-  // console.log(nodeAndEdgeData.nodes);
-  // console.log(nodeAndEdgeData.edges);
+  states.map((s) => {
+    if (s.name.toLowerCase().trim().split(" ")[0] === "start") {
+      s.type = "start";
+      s.function = "Continue";
+    }
+    if (s.name.toLowerCase().trim().split(" ")[0] === "exit") {
+      s.type = "exit";
+      s.function = "Continue";
+    }
+  });
 
   const transitions = nodeAndEdgeData.edges
     .filter((n) => {
@@ -408,7 +422,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
   const instructionSet = {
-    name: instructions.title,
+    Title: instructions.title,
+    Tag: tag ?? "",
     variables: varsFromDb,
     functions: functions,
     states: states,

@@ -8,12 +8,10 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import {
   ArrowSmallRightIcon,
   SignalSlashIcon,
-  XCircleIcon,
 } from "@heroicons/react/24/outline";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { type VariableType } from "@prisma/client";
 import { LightningBoltIcon } from "@radix-ui/react-icons";
-import { useGetVarTypes } from "~/flow/variableTypeData";
 
 // const handleStyle = {
 //   top: 10,
@@ -199,9 +197,7 @@ export const CustomFunction = (props: nodeData) => {
         className={`flex  ${
           loading ||
           error ||
-          data === undefined ||
-          data?.name.toLowerCase() === "start" ||
-          data?.name.toLowerCase() === "exit"
+          data === undefined 
             ? "h-20 w-40 border border-transparent bg-neutral-900"
             : "h-48 w-80 border border-neutral-600 bg-neutral-800"
         } items-start justify-center gap-2 rounded-lg  p-2 transition-all delay-300`}
@@ -219,7 +215,7 @@ export const CustomFunction = (props: nodeData) => {
           </div>
         ) : (
           <>
-            {!error && (
+            {!error && !isLoading && (
               <>
                 <div className="w-3/4">
                   <div className="flex items-center justify-start">
