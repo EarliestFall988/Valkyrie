@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { Edge, Node } from "reactflow";
+import { getId } from "~/flow/flow";
 import { prisma } from "~/server/db";
 
 // type ContentRequestType = {
@@ -8,6 +9,8 @@ import { prisma } from "~/server/db";
 // };
 
 const key = "some key"; //TODO: put this in the env file
+
+const getNewId = () => crypto.randomUUID();
 
 type VariableType = {
   name: string;
@@ -158,7 +161,124 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     return !res;
   });
 
-  // console.log(dataEdges);
+  const funcs = await prisma.customFunction.findMany({
+    where: {
+      jobId: instructionId,
+    },
+    include: {
+      parameters: {
+        orderBy: {
+          name: "asc",
+        },
+      },
+    },
+  });
+
+  const functionData = [] as {
+    name: string;
+    dbId: string;
+    fId: string;
+    instanceId: string;
+    params: { name: string; type: string; id: string; instanceId: string }[];
+  }[];
+
+  nodeAndEdgeData.nodes.forEach((n) => {
+    const data = n.data as { label: string; instanceId: string };
+
+    const fun = funcs.find((f) => f.name === data.label);
+
+    if (fun) {
+      const f = fun;
+
+      // console.log(n.data.parameters);
+
+      const data = n.data as {
+        label: string;
+        instanceId: string;
+        parameters: { name: string; instanceId: string }[] | undefined;
+      };
+      if (data.label.trim() === f.name.trim()) {
+        functionData.push({
+          name: data.label.trim(),
+          dbId: f.id,
+          fId: n.id,
+          instanceId: data.instanceId,
+          params: f.parameters.map((p) => {
+            return {
+              name: p.name.trim(),
+              type: p.type,
+              id: p.id,
+              instanceId:
+                data.parameters?.find((x) => x.name === p.name)?.instanceId ?? "", //might be something here causing problems...
+            };
+          }),
+        });
+      }
+    }
+  });
+
+ // console.log(dataEdges);
+
+  const pLinks = [] as {
+    name: string;
+    id: string;
+    type: string;
+    value: string;
+  }[];
+
+  dataEdges.map((e) => {
+    const source = e.sourceHandle;
+    const target = e.targetHandle;
+
+    const paramA = source?.toLowerCase().startsWith("p");
+    const paramB = target?.toLowerCase().startsWith("p");
+
+    const paramADbId = source?.split(" ")[1]?.trim() ?? "";
+    const paramAInstanceId = source?.split(" ")[2]?.trim();
+
+    const paramBDbId = target?.split(" ")[1]?.trim() ?? "";
+    const paramBInstanceId = target?.split(" ")[2]?.trim();
+
+    if (paramA && paramB) {
+      const sourceFunction = functionData.find((f) => f.fId === e.source);
+      const targetFunction = functionData.find((f) => f.fId === e.target);
+
+      const sourceParam = sourceFunction?.params.find(
+        (p) => p.id === paramADbId
+      );
+      const targetParam = targetFunction?.params.find(
+        (p) => p.id === paramBDbId
+      );
+
+      const id = getNewId();
+
+      const sourceInstanceId = sourceFunction?.instanceId;
+      const targetInstanceId = targetFunction?.instanceId;
+
+      if (
+        sourceInstanceId &&
+        targetInstanceId &&
+        paramAInstanceId &&
+        paramBInstanceId
+      ) {
+        pLinks.push({
+          name:
+            sourceFunction?.instanceId +
+            " " +
+            targetFunction.instanceId +
+            " " +
+            paramAInstanceId +
+            " " +
+            paramBInstanceId,
+          id: id + " " + sourceFunction.name + " => " + targetFunction.name,
+          type: sourceParam?.type ?? targetParam?.type ?? "",
+          value: "",
+        });
+      }
+    }
+  });
+
+  // console.log("p links ", pLinks);
 
   const varParamConnectionIds = dataEdges
     .map((e) => {
@@ -174,7 +294,18 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
 
       // console.log("varid ", varHandleId?.split(" ")[1]?.trim());
 
-      // console.log(varHandleId);
+      // console.log(e.targetHandle);
+
+      if (paramHandleId === varHandleId) {
+        return {
+          paramDbId: "",
+          varDbId: "",
+          paramInstanceId: "",
+          varInstanceId: "",
+          source: "",
+          target: "",
+        };
+      }
 
       const varDbId = varHandleId?.split(" ")[1]?.trim();
       const varInstanceId = varHandleId?.split(" ")[2]?.trim();
@@ -194,15 +325,20 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
         target,
       };
     })
-    .filter(
-      (e) =>
-        e?.paramDbId &&
+    .filter((e) => {
+      if (!e) return false;
+
+      if (
+        e.paramDbId &&
         e.varDbId &&
         e.paramInstanceId &&
         e.varInstanceId &&
         e.source &&
         e.target
-    );
+      ) {
+        return true;
+      }
+    });
 
   // console.log("connected param ids ", varParamConnectionIds);
 
@@ -214,15 +350,7 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     },
   });
 
-  // const varsFromDb = await prisma.variables.findMany({
-  //   where: {
-  //     id: {
-  //       in: varParamConnectionIds.map((x) => x.varDbId!),
-  //     },
-  //   },
-  // });
-
-  const varsFromDb = instructions.variables.map((v) => {
+  const varsFromDbAndpLinks = instructions.variables.map((v) => {
     return {
       name: v.name.trim(),
       id: v.id,
@@ -232,6 +360,17 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   });
 
   // console.log("vars from db", varsFromDb);
+
+  varsFromDbAndpLinks.push(
+    ...pLinks.map((p) => {
+      return {
+        name: p.name,
+        id: p.id,
+        type: p.type,
+        value: p.value,
+      } as VariableType;
+    })
+  );
 
   const connections = [] as {
     name: string;
@@ -246,7 +385,7 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     // console.log(e);
 
     const param = paramsFromDb.find((p) => p.id === e.paramDbId);
-    const variable = varsFromDb.find((v) => v.id === e.varDbId);
+    const variable = varsFromDbAndpLinks.find((v) => v.id === e.varDbId);
 
     // console.log(param);
     //console.log(variable);
@@ -266,60 +405,18 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
 
   // console.log("connections", connections);
 
-  const funcs = await prisma.customFunction.findMany({
-    where: {
-      jobId: instructionId,
-    },
-    include: {
-      parameters: {
-        orderBy: {
-          name: "asc",
-        },
-      },
-    },
-  });
-
-  const functionData = [] as {
-    name: string;
-    dbId: string;
-    fId: string;
-    instanceId: string;
-    params: { name: string; type: string; id: string }[];
-  }[];
-
-  nodeAndEdgeData.nodes.forEach((n) => {
-    const fun = funcs.find((f) => {
-      const id = n.id;
-
-      const data = n.data as { label: string; instanceId: string };
-      if (data.label.trim() === f.name.trim()) {
-        functionData.push({
-          name: data.label.trim(),
-          dbId: f.id,
-          fId: id,
-          instanceId: data.instanceId,
-          params: f.parameters.map((p) => {
-            return {
-              name: p.name.trim(),
-              type: p.type,
-              id: p.id,
-            };
-          }),
-        });
-
-        return true && data.instanceId;
-      }
-    });
-
-    return fun !== undefined && fun !== null;
-  });
-
-  console.log("function instance ids", functionData);
+  // console.log("function instance ids", functionData);
 
   const functions = functionData
     .map((ins) => {
+      const lostParams = [] as {
+        name: string;
+        type: string;
+        id: string;
+        instanceId: string;
+      }[];
 
-      return {
+      const result = {
         name: ins.name + " " + ins.instanceId,
         parameters: ins.params.map((p) => {
           return {
@@ -327,14 +424,47 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
             type: p.type,
             connectVar:
               connections.find((c) => {
-                return (
-                  (c.dbId === p.id && c.source == ins.fId) ||
-                  c.target == ins.fId
-                );
+                if (
+                  c.dbId === p.id &&
+                  (c.source == ins.fId || c.target == ins.fId)
+                ) {
+                  return true;
+                } else {
+                  lostParams.push(p);
+                  return false;
+                }
               })?.variableName ?? "",
           } as InputParamType;
         }),
       };
+
+      // console.log("lost params", lostParams);
+
+      lostParams.forEach((param) => {
+        const p = pLinks.find((p) => {
+
+          // console.log("param", param, " p ", p);
+
+          const paramAInstanceId = p.name.split(" ")[2];
+          const paramBInstanceId = p.name.split(" ")[3];
+
+          if (
+            param.instanceId == paramAInstanceId ||
+            param.instanceId == paramBInstanceId
+          ) {
+            return true;
+          }
+        });
+
+        if (p) {
+          // console.log("found p", p);
+
+          result.parameters.find((x) => x.name === param.name)!.connectVar =
+            p.name;
+        }
+      });
+
+      return result;
     })
     .filter((f) => f !== null);
 
@@ -384,7 +514,7 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
       s.function = "Continue";
     }
     if (s.name.toLowerCase().trim().split(" ")[0] === "exit") {
-      s.type = "exit";
+      s.type = "fallback";
       s.function = "Continue";
     }
   });
@@ -424,7 +554,7 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   const instructionSet = {
     Title: instructions.title,
     Tag: tag ?? "",
-    variables: varsFromDb,
+    variables: varsFromDbAndpLinks,
     functions: functions,
     states: states,
     transitions: transitions,

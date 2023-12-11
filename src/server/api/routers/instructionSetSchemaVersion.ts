@@ -30,8 +30,6 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
 
       const uri = `${host}api/v1/getdata?version=create`;
 
-      console.log(uri);
-
       let successful = false;
 
       const data = await fetch(uri, {
@@ -43,21 +41,23 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
         headers: {
           "x-api-key": key,
           "x-instruction-id": input.jobId,
+          "x-tag": input.name,
         },
       }).then((res) => {
         if (res.status !== 200) {
-          console.log("error", res.statusText);
-          return "failed to fetch data";
+          successful = false;
+        } else {
+          successful = true;
         }
-        successful = true;
         return res.text();
       });
 
-      if (!successful)
+      if (!successful) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch data",
+          message: data,
         });
+      }
 
       const newVersion = await ctx.prisma.instructionSetSchemaVersion.create({
         data: {

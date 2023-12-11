@@ -31,6 +31,8 @@ const VersionsPage: NextPage = () => {
   const [name, setName] = useState("");
   const [productionBuild, setProductionBuild] = useState("false");
 
+  const [errorStr, setErrorStr] = useState("");
+
   const { mutate: newVersionMutation, isLoading: isCreating } =
     api.schemaVersioning.createNewVersion.useMutation({
       onSuccess: () => {
@@ -38,15 +40,24 @@ const VersionsPage: NextPage = () => {
         void versionCtx.invalidate();
 
         setName("");
+        setErrorStr("");
         setProductionBuild("false");
       },
-      onError: () => {
-        console.log("error");
+
+      onError(error) {
+        const data = JSON.parse(error.message) as
+          | { message: string }
+          | undefined;
+
+        setErrorStr(data?.message ?? "there was an error creating the version");
+        console.log(data);
       },
     });
 
   const createNewVersion = useCallback(
     (name: string, description: string, productionBuild: string) => {
+      setErrorStr("");
+
       if (id === null || id === undefined) return;
 
       if (isCreating) return;
@@ -75,21 +86,30 @@ const VersionsPage: NextPage = () => {
         <h1 className="text-lg font-semibold">Versions</h1>
       </div>
       <div className="flex min-h-[80vh] w-full items-start justify-center p-2">
-        <div className="w-96 rounded-2xl border border-neutral-600 p-5 lg:w-2/3 2xl:w-1/2">
+        <div className="w-full rounded-2xl border border-neutral-600 p-5 lg:w-3/4 2xl:w-1/2">
           <div className="flex items-center justify-end gap-2 p-5">
             <div className="flex w-1/2 flex-col items-start">
               <p className="full text-lg font-semibold">New Version</p>
-              <div className="flex w-full items-center justify-end gap-2">
-                <input
-                  type="text"
-                  className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                  }}
-                  placeholder="version name"
-                  autoFocus
-                />
+              <div className="flex w-full items-start justify-end gap-2">
+                <div className="w-full">
+                  <input
+                    type="text"
+                    className="w-full rounded bg-neutral-800 p-1 text-neutral-200 outline-none ring-2 ring-neutral-700 transition duration-100 hover:ring hover:ring-neutral-700 focus:ring-purple-700"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                    }}
+                    placeholder="version name"
+                    autoFocus
+                  />
+                  <p>
+                    {errorStr.length > 0 && (
+                      <p className="py-1 text-sm italic text-red-500">
+                        {errorStr}
+                      </p>
+                    )}
+                  </p>
+                </div>
                 <select
                   value={productionBuild}
                   onChange={(e) => {
