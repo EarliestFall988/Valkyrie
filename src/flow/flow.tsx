@@ -171,11 +171,12 @@ export const Flow: React.FC<{
         data = {
           ...data,
           jobId: id,
+          instanceId: getId(),
         };
 
         console.log(data);
 
-        console.log("new var ", data.id);
+        // console.log("new var ", data.id);
 
         const newNode = {
           id: getId(),
@@ -194,11 +195,14 @@ export const Flow: React.FC<{
       if (data.nodeType === "customFunction") {
         const data = JSON.parse(rawData) as functionMetaData;
 
-        // data.parameters = data.parameters.map((param) => {
-        //   return {
-        //     ...param,
-        //   };
-        // });
+        data.instanceId = getId();
+
+        data.parameters = data.parameters.map((param) => {
+          return {
+            ...param,
+            instanceId: getId(),
+          };
+        });
 
         const newNode = {
           id: getId(),
@@ -272,6 +276,8 @@ export const Flow: React.FC<{
 
 export type varMetaDataType = {
   id: string;
+  dbId: string;
+  instanceId: string;
   jobId: string;
   nodeType: string;
   label: string;
@@ -281,5 +287,6 @@ export type varMetaDataType = {
 };
 
 export type functionMetaData = nodeData & {
+  instanceId: string;
   parameters: ParameterType[];
 };

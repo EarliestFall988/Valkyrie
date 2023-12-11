@@ -641,6 +641,8 @@ const VariableItem: React.FC<{
   const onDragStart = (event: React.DragEvent<HTMLDivElement>) => {
     const nodeData = JSON.stringify({
       id: v.id,
+      dbId: v.id,
+      instanceId: "",
       nodeType: "variable",
       label: v.name,
       required: v.required,

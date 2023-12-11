@@ -1,14 +1,19 @@
 import { Handle, Position } from "reactflow";
 import { api } from "~/utils/api";
 import { type functionMetaData } from "~/flow/flow";
-import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { TooltipComponent } from "~/components/tooltip";
 import { CamelCaseToNormal } from "~/pages/jobs/[id]/instructions";
 import { LoadingSmall } from "~/components/loading";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { SignalSlashIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowSmallRightIcon,
+  SignalSlashIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/outline";
 import { useEffect, useMemo, useState } from "react";
 import { type VariableType } from "@prisma/client";
+import { LightningBoltIcon } from "@radix-ui/react-icons";
+import { useGetVarTypes } from "~/flow/variableTypeData";
 
 // const handleStyle = {
 //   top: 10,
@@ -26,7 +31,7 @@ export const CustomFunction = (props: nodeData) => {
 
   const [varTypes, setVarTypes] = useState<VariableType[]>([]);
 
-  const [animationParent] = useAutoAnimate();
+  // const [animationParent] = useAutoAnimate();
 
   const { data, isLoading, isError } = api.functions.getFunctionById.useQuery({
     id: props.data.id,
@@ -36,6 +41,8 @@ export const CustomFunction = (props: nodeData) => {
     api.variableTypes.getAllVariableTypesByJob.useQuery({
       jobId: data?.jobId ?? "",
     });
+
+  // const varTypeData = useGetVarTypes(data?.jobId ?? "");
 
   useMemo(() => {
     const varTypeDataResult = varTypeData ?? [];
@@ -62,10 +69,10 @@ export const CustomFunction = (props: nodeData) => {
 
     const result = parameters.map((parameter) => {
       const leftTopLocation = leftIndex * 20 + 50;
-      const leftWordLocation = 5 - leftIndex;
+      // const leftWordLocation = 5 - leftIndex;
 
       const rightTopLocation = rightIndex * 20 + 50;
-      const rightWordLocation = 5 - rightIndex;
+      // const rightWordLocation = 5 - rightIndex;
 
       let backgroundColor = "#00000";
 
@@ -76,6 +83,8 @@ export const CustomFunction = (props: nodeData) => {
       if (color) {
         backgroundColor = color;
       }
+
+      // console.log('test')
 
       // console.log(parameter);
 
@@ -106,6 +115,8 @@ export const CustomFunction = (props: nodeData) => {
           props.data.parameters.find((x) => x.id === parameter.id)
             ?.instanceId ?? "";
 
+        const finalId = "pIn " + parameter.id + " " + paramInstanceId;
+
         // console.log(paramInstanceId);
 
         const res = (
@@ -114,7 +125,7 @@ export const CustomFunction = (props: nodeData) => {
               key={parameter.id}
               type="target"
               position={Position.Left}
-              id={paramInstanceId}
+              id={finalId}
               style={{
                 top: leftTopLocation,
                 border: "1px solid black",
@@ -184,12 +195,16 @@ export const CustomFunction = (props: nodeData) => {
       {/* <Handle type="target" position={Position.Left} /> */}
 
       <div
-        ref={animationParent}
+        // ref={animationParent}
         className={`flex  ${
-          loading
-            ? "h-20 w-80 border border-transparent"
-            : "h-48 w-80 border border-neutral-600"
-        } items-start justify-center gap-2 rounded-lg bg-neutral-800 p-2 transition-all delay-300`}
+          loading ||
+          error ||
+          data === undefined ||
+          data?.name.toLowerCase() === "start" ||
+          data?.name.toLowerCase() === "exit"
+            ? "h-20 w-40 border border-transparent bg-neutral-900"
+            : "h-48 w-80 border border-neutral-600 bg-neutral-800"
+        } items-start justify-center gap-2 rounded-lg  p-2 transition-all delay-300`}
       >
         {error && (
           <div className="flex h-full w-full animate-pulse items-center justify-center gap-2 text-red-500/50">
@@ -207,9 +222,15 @@ export const CustomFunction = (props: nodeData) => {
             {!error && (
               <>
                 <div className="w-3/4">
-                  <div>
-                    <p className="text-lg font-semibold">
-                      {CamelCaseToNormal(data?.name ?? "")}
+                  <div className="flex items-center justify-start">
+                    {data?.name.toLowerCase() === "start" && (
+                      <LightningBoltIcon className="mr-1 inline-block h-8 w-8 text-yellow-500" />
+                    )}
+                    {data?.name.toLowerCase() === "exit" && (
+                      <ArrowSmallRightIcon className="mr-1 inline-block h-10 text-blue-500" />
+                    )}
+                    <p className="w-full text-lg font-semibold">
+                      {CamelCaseToNormal(data?.name.trim() ?? "")}
                     </p>
                     <p className="w-full truncate whitespace-nowrap text-xs">
                       {data?.description ?? ""}

@@ -1,4 +1,3 @@
-import { Console } from "console";
 import { useEffect, useState } from "react";
 import { Handle, Position } from "reactflow";
 // import { TextIcon } from "@radix-ui/react-icons";
@@ -15,13 +14,16 @@ type nodeData = {
 export const VariableNode = (props: nodeData) => {
   const [backgroundColor, setBackgroundColor] = useState<string>("white");
 
-
-  console.log(props.data.id);
+  // console.log(props.data.id);
 
   const { data: varTypeData } =
     api.variableTypes.getAllVariableTypesByJob.useQuery({
       jobId: props.data.jobId,
     });
+
+    // console.log(props);
+
+    // console.log(props.data.id);
 
   // const dataType = props.data.type as
   //   | "text"
@@ -67,7 +69,7 @@ export const VariableNode = (props: nodeData) => {
           border: 0,
           backgroundColor: backgroundColor,
         }}
-        id={`vin ${props.data.id}`}
+        id={`vin ${props.data.dbId} ${props.data.instanceId}`}
       />
       <div className="flex h-6 items-center justify-center gap-2 rounded bg-zinc-700 px-4">
         {/* {dataType === "text" && <TextIcon className="h-4 w-4" />}
@@ -75,7 +77,7 @@ export const VariableNode = (props: nodeData) => {
         {dataType === "decimal" && <p className="text-sm">1.2</p>}
         {dataType === "boolean" && <p className="text-sm">y/n</p>} */}
         <p className="z-20 whitespace-nowrap font-semibold">
-          {props?.data.label || "(Unnamed)"}{" "}
+          {props?.data.label || "(Unnamed)"}
         </p>
         {/* {(dataType === "text" ||
           dataType === "integer" ||
@@ -110,7 +112,7 @@ export const VariableNode = (props: nodeData) => {
           border: 0,
           backgroundColor: backgroundColor,
         }}
-        id={`vout ${props.data.id}`}
+        id={`vout ${props.data.dbId} ${props.data.instanceId}`}
       />
       {/* <Handle
         type="source"

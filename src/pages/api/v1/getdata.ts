@@ -122,11 +122,6 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
           name: "asc",
         },
       },
-      customFunctions: {
-        orderBy: {
-          name: "asc",
-        },
-      },
     },
   });
 
@@ -136,9 +131,6 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   // return res.json(JSON.parse(instructions.data));
-
-  const instructionVariables = instructions.variables;
-  const instructionFunctions = instructions.customFunctions;
 
   const instructionData = instructions.data;
 
@@ -162,9 +154,9 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
     return !res;
   });
 
-  console.log(dataEdges);
+  // console.log(dataEdges);
 
-  const connectedParamIds = dataEdges
+  const varParamConnectionIds = dataEdges
     .map((e) => {
       const paramHandleId = e.sourceHandle?.startsWith("vout")
         ? e.targetHandle
@@ -176,61 +168,79 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
 
       console.log(e);
 
-      console.log("varid ", varHandleId?.split(" ")[1]?.trim());
-      const varId = varHandleId?.split(" ")[1]?.trim();
+      // console.log("varid ", varHandleId?.split(" ")[1]?.trim());
 
-      const paramId = paramHandleId?.split(" ")[1]?.trim();
+      console.log(varHandleId);
 
-      return { paramId, varId };
+      const varDbId = varHandleId?.split(" ")[1]?.trim();
+      const varInstanceId = varHandleId?.split(" ")[2]?.trim();
+
+      const paramDbId = paramHandleId?.split(" ")[1]?.trim();
+      const paramInstanceId = paramHandleId?.split(" ")[2]?.trim();
+
+      return { paramDbId, varDbId, paramInstanceId, varInstanceId };
     })
-    .filter((e) => e !== undefined && e !== null);
+    .filter(
+      (e) => e?.paramDbId && e.varDbId && e.paramInstanceId && e.varInstanceId
+    );
 
-  console.log("connected param ids ", connectedParamIds);
+  // console.log("connected param ids ", varParamConnectionIds);
 
-  const params = await prisma.parameters.findMany({
+  const paramsFromDb = await prisma.parameters.findMany({
     where: {
       id: {
-        in: connectedParamIds.map((x) => x.paramId!),
+        in: varParamConnectionIds.map((x) => x.paramDbId!),
       },
     },
   });
 
-  console.log("params ", params);
+  // const varsFromDb = await prisma.variables.findMany({
+  //   where: {
+  //     id: {
+  //       in: varParamConnectionIds.map((x) => x.varDbId!),
+  //     },
+  //   },
+  // });
 
-  const variables = await prisma.variables.findMany({
-    where: {
-      id: {
-        in: connectedParamIds.map((x) => x.varId!),
-      },
-    },
-  });
-
-  console.log("vars ", variables);
-
-  const paramMap = new Map<string, string>();
-
-  connectedParamIds.forEach((e) => {
-    // console.log(e);
-
-    const param = params.find((p) => p.id === e.paramId);
-    const variable = variables.find((v) => v.id === e.varId);
-
-    // console.log(param);
-    // console.log(variable);
-
-    if (param === undefined || variable === undefined) {
-      return;
-    }
-    paramMap.set(param.name.trim(), variable.name.trim());
-  });
-
-  const vars = instructions.variables.map((v) => {
+  const varsFromDb = instructions.variables.map((v) => {
     return {
       name: v.name.trim(),
+      id: v.id,
       type: v.type.trim(),
       value: v.value,
     } as VariableType;
   });
+
+  // console.log("vars from db", varsFromDb);
+
+  const connections = [] as {
+    name: string;
+    dbId: string;
+    instanceId: string;
+    variableName: string;
+  }[];
+
+  varParamConnectionIds.forEach((e) => {
+    // console.log(e);
+
+    const param = paramsFromDb.find((p) => p.id === e.paramDbId);
+    const variable = varsFromDb.find((v) => v.id === e.varDbId);
+
+    // console.log(param);
+    //console.log(variable);
+
+    if (param === undefined || variable === undefined) {
+      return;
+    }
+    connections.push({
+      name: param.name.trim(),
+      dbId: e.paramDbId ?? "",
+      instanceId: e.paramInstanceId ?? "",
+      variableName: variable.name.trim(),
+    });
+  });
+
+  console.log("connections", connections);
 
   const funcs = await prisma.customFunction.findMany({
     where: {
@@ -248,38 +258,66 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
   let containsStart = false;
   let containsExit = false;
 
-  const functions = funcs
-    .filter((f) => {
-      if (f.name.toLowerCase().trim() === "start") {
-        containsStart = true;
-        return false;
-      }
-      if (f.name.toLowerCase().trim() === "exit") {
-        containsExit = true;
-        return false;
-      }
+  const functionInstanceIds = [] as {
+    id: string;
+    instanceId: string;
+    used: boolean;
+  }[];
 
-      const fun = nodeAndEdgeData.nodes.find((n) => {
-        const data = n.data as { label: string };
-        return data.label.trim() === f.name.trim();
-      });
+  const matchValidFunctions = funcs.filter((f) => {
+    if (f.name.toLowerCase().trim() === "start") {
+      containsStart = true;
+      return false;
+    }
+    if (f.name.toLowerCase().trim() === "exit") {
+      containsExit = true;
+      return false;
+    }
 
-      return fun !== undefined;
-    })
-    .map((f) => {
-      // console.log(f);
+    const fun = nodeAndEdgeData.nodes.find((n) => {
+      const data = n.data as { label: string; instanceId: string };
+      if (data.label.trim() === f.name.trim()) {
+        functionInstanceIds.push({
+          id: f.id,
+          instanceId: data.instanceId,
+          used: false,
+        });
+
+        return true && data.instanceId;
+      }
+    });
+
+    return fun !== undefined && fun !== null;
+  });
+
+  console.log("function instance ids", functionInstanceIds);
+
+  const functions = functionInstanceIds
+    .map((ins) => {
+      const f = matchValidFunctions.find((f) => f.id === ins.id);
+      if (f === undefined) return null;
+
+      ins.used = true;
 
       return {
-        name: f.name,
+        name: f.name + " " + ins.instanceId,
         parameters: f.parameters.map((p) => {
           return {
             name: p.name.trim(),
             type: p.type,
-            connectVar: paramMap.get(p.name.trim()) ?? "", //p.connectVar,
+            connectVar:
+              connections.find((c) => {
+                return (
+                  c.dbId === p.id &&
+                  c.name === p.name &&
+                  c.instanceId === ins.instanceId
+                );
+              })?.variableName ?? "",
           } as InputParamType;
         }),
       } as FunctionType;
-    });
+    })
+    .filter((f) => f !== null) as FunctionType[];
 
   const states = functions.map((f) => {
     // let type = "state";
@@ -354,8 +392,8 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
         return null;
       }
 
-      const sourceData = source.data as { label: string };
-      const labelData = target.data as { label: string };
+      const sourceData = source.data as { label: string; instanceId: string };
+      const labelData = target.data as { label: string; instanceId: string };
       let outcome = n.sourceHandle?.substr(1);
 
       if (outcome === "-") {
@@ -363,15 +401,15 @@ const ContentRoute = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       return {
-        from: sourceData.label.trim() + " state",
-        to: labelData.label.trim() + " state",
+        from: sourceData.label.trim() + " " + sourceData.instanceId + " state",
+        to: labelData.label.trim() + " " + labelData.instanceId + " state",
         outcome: parseInt(outcome ?? "1"),
       } as TransitionType;
     });
 
   const instructionSet = {
     name: instructions.title,
-    variables: vars,
+    variables: varsFromDb,
     functions: functions,
     states: states,
     transitions: transitions,
