@@ -28,7 +28,9 @@ export const instructionSetSchemaVersionRouter = createTRPCRouter({
         throw new Error("Job not found");
       }
 
-      const uri = `${host}api/v1/getdata?version=create`;
+      const uri = `https://valkyrie-git-get-functions-from-server-earliestfall988.vercel.app/api/v1/getdata?version=create`;
+
+      console.log(uri);
 
       let successful = false;
 
