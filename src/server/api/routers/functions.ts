@@ -1,4 +1,4 @@
-import { promise, z } from "zod";
+import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
 import { prisma } from "~/server/db";
 

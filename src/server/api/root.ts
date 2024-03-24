@@ -5,6 +5,7 @@ import { functionsRouter } from "./routers/functions";
 import { variablesRouter } from "./routers/variables";
 import { instructionSetSchemaVersionRouter } from "./routers/instructionSetSchemaVersion";
 import { VariableTypes as variableTypes } from "./routers/customVariableType";
+import { utilRouter } from "./routers/handleData";
 
 /**
  * This is the primary router for your server.
@@ -17,7 +18,8 @@ export const appRouter = createTRPCRouter({
   functions: functionsRouter,
   variables: variablesRouter,
   schemaVersioning: instructionSetSchemaVersionRouter,
-  variableTypes: variableTypes
+  variableTypes: variableTypes,
+  pullData: utilRouter,
 });
 
 // export type definition of API

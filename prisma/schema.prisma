@@ -2,12 +2,13 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+    provider        = "prisma-client-js"
+    previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-    provider     = "mysql"
-    url          = env("DATABASE_URL")
+    provider     = "sqlite"
+    url          = "file:./dev.db" //env("TURSO_DATABASE_URL")
     relationMode = "prisma"
 }
 
@@ -22,15 +23,15 @@ model Job {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    title       String  @db.VarChar(255)
-    description String? @db.VarChar(255)
-    ui_data     String  @db.Text()
-    data        String  @db.LongText()
+    title       String
+    description String?
+    ui_data     String
+    data        String
 
     customFunctions CustomFunction[]
     variables       Variables[]
 
-    authorId String @db.VarChar(255)
+    authorId String
 }
 
 model Variables {
@@ -38,19 +39,19 @@ model Variables {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    name        String  @db.VarChar(255)
-    description String? @db.VarChar(255)
-    type        String  @db.VarChar(255)
-    typeId      String  @default("") @db.VarChar(255)
+    name        String
+    description String?
+    type        String
+    typeId      String  @default("")
     required    Boolean @default(false)
-    default     String? @db.VarChar(255)
-    value       String? @db.VarChar(255)
+    default     String?
+    value       String?
 
     jobId String
 
     job Job[]
 
-    authorId String @db.VarChar(255)
+    authorId String
 }
 
 model CustomFunction {
@@ -58,15 +59,15 @@ model CustomFunction {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    name        String       @db.VarChar(255)
-    description String?      @db.VarChar(255)
+    name        String
+    description String?
     parameters  Parameters[]
 
     jobId String
 
     job Job[]
 
-    authorId String @db.VarChar(255)
+    authorId String
 }
 
 model Parameters {
@@ -74,12 +75,12 @@ model Parameters {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    name        String  @db.VarChar(255)
-    description String? @db.VarChar(255)
-    type        String  @db.VarChar(255)
+    name        String
+    description String?
+    type        String
     required    Boolean @default(false)
-    default     String? @db.VarChar(255)
-    io          String  @db.VarChar(255)
+    default     String?
+    io          String
 
     customFunctionId String
 
@@ -93,14 +94,14 @@ model Pins {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    pinCode String @db.VarChar(255)
-    userId  String @db.VarChar(255)
-    status  String @db.VarChar(255)
+    pinCode String
+    userId  String
+    status  String
 
-    deviceId          String @db.VarChar(255)
-    deviceName        String @db.VarChar(255)
-    deviceDescription String @db.VarChar(255)
-    deviceType        String @db.VarChar(255)
+    deviceId          String
+    deviceName        String
+    deviceDescription String
+    deviceType        String
 }
 
 model InstructionSetSchemaVersion {
@@ -108,16 +109,16 @@ model InstructionSetSchemaVersion {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    name        String @db.VarChar(255)
-    description String @db.VarChar(255)
+    name        String
+    description String
 
-    data String @db.LongText
+    data String
 
-    jobid String @db.VarChar(255)
+    jobid String
 
     productionBuild Boolean @default(false)
 
-    authorId String @db.VarChar(255)
+    authorId String
 }
 
 model APISchema {
@@ -125,17 +126,17 @@ model APISchema {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    name        String @db.VarChar(255)
-    description String @db.VarChar(255)
+    name        String
+    description String
 
-    uri     String @db.VarChar(255)
-    method  String @db.VarChar(255)
-    headers String @db.LongText
-    body    String @db.LongText
+    uri     String
+    method  String
+    headers String
+    body    String
 
-    schemaResult String @db.LongText
+    schemaResult String
 
-    authorId String @db.VarChar(255)
+    authorId String
 }
 
 model VariableType {
@@ -143,12 +144,12 @@ model VariableType {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    typeName    String @db.VarChar(255)
-    description String @db.VarChar(255)
-    colorHex    String @default("#000000") @db.VarChar(255)
-    jobId       String @db.VarChar(255)
+    typeName    String
+    description String
+    colorHex    String @default("#000000")
+    jobId       String
 
-    authorId String @db.VarChar(255)
+    authorId String
 
     @@index([authorId], name: "authorId")
 }
