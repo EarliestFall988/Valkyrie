@@ -2,6 +2,14 @@ import { z } from "zod";
 import { createTRPCRouter, privateProcedure } from "../trpc";
 import { prisma } from "~/server/db";
 
+type paramType = {
+  name: string;
+  type: string;
+  required: boolean;
+  io: string;
+  customFunctionId: string;
+};
+
 export const NormalSpacedToCamelCase = (str: string) => {
   let i = 0;
 
@@ -66,8 +74,14 @@ export const functionsRouter = createTRPCRouter({
         })
       );
 
-      const newParams = await ctx.prisma.parameters.createMany({
-        data: params,
+      const newParams = [] as paramType[];
+
+      params.map(async (param) => {
+        const paramResult = await ctx.prisma.parameters.create({
+          data: param,
+        });
+
+        newParams.push(paramResult);
       });
 
       return { newFunction, newParams };
