@@ -31,7 +31,35 @@ model Job {
     customFunctions CustomFunction[]
     variables       Variables[]
 
+    jobGroups JobGroup[]
+
     authorId String
+}
+
+model JobGroup {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    name        String
+    description String?
+
+    jobs Job[]
+
+    authorId String
+    shared   Shared[]
+}
+
+model Shared {
+    id        String   @id
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    userId String
+
+    jobGroups JobGroup[]
+
+    role String
 }
 
 model Variables {

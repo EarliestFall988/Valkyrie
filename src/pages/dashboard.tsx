@@ -1,6 +1,8 @@
 import {
   ArchiveBoxArrowDownIcon,
   ExclamationTriangleIcon,
+  FolderIcon,
+  FolderPlusIcon,
   PlusIcon,
   QueueListIcon,
   SignalIcon,
@@ -15,8 +17,8 @@ import Link from "next/link";
 import { UserButton } from "@clerk/clerk-react";
 import { api } from "~/utils/api";
 import { Loading } from "~/components/loading";
-import { useState } from "react";
-import { type Job } from "@prisma/client";
+import React, { useState } from "react";
+import { JobGroup, type Job } from "@prisma/client";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { LightningBoltIcon, Share1Icon } from "@radix-ui/react-icons";
 import { TooltipComponent } from "~/components/tooltip";
@@ -32,6 +34,14 @@ const Dashboard: NextPage = () => {
   } = api.jobs.getAllJobs.useQuery({});
 
   const jobContext = api.useContext().jobs;
+  const jobGroupContext = api.useContext().jobGroups;
+
+  const jobGroupSearchApi = api.jobGroups.search.useQuery({ searchTerm: "" });
+  const jobGroupDeleteApi = api.jobGroups.deleteJobGroup.useMutation({
+    onSuccess: () => {
+      void jobGroupContext.invalidate();
+    },
+  });
 
   const [animationParent] = useAutoAnimate();
 
@@ -59,6 +69,7 @@ const Dashboard: NextPage = () => {
   };
 
   const [jobsToDelete, setJobsToDelete] = useState<Job[]>([]);
+  const [bindersToDelete, setBindersToDelete] = useState<JobGroup[]>([]);
 
   const addJobToDelete = (id: string) => {
     const job = jobs?.find((job) => job.id === id);
@@ -70,7 +81,20 @@ const Dashboard: NextPage = () => {
     setJobsToDelete((prev) => prev.filter((job) => job.id !== id));
   };
 
-  // console.log(jobsToDelete);
+  const addBinderToDelete = (id: string) => {
+    const binder = jobGroupSearchApi?.data?.find((x) => x.id === id);
+    if (!binder) return;
+    setBindersToDelete((prev) => [...prev, binder]);
+  };
+
+  const removeBinderToDelete = (id: string) => {
+    setBindersToDelete((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  const deleteItems = () => {
+    deleteJobs(jobsToDelete);
+    jobGroupDeleteApi.mutate(bindersToDelete);
+  };
 
   return (
     <>
@@ -95,23 +119,29 @@ const Dashboard: NextPage = () => {
         <div className="h-[8vh]" />
         <div className="flex w-full flex-col gap-2 rounded-lg p-2 md:m-auto md:w-5/6 2xl:w-2/3">
           <div className="flex items-center justify-between gap-5">
-            <h3 className="select-none text-3xl font-semibold">Instructions</h3>
+            <h3 className="select-none text-3xl font-semibold">Recent</h3>
             <div className="flex items-center justify-center gap-2">
-              <TooltipComponent side="bottom" content="Add a new instruction">
+              <TooltipComponent side="bottom" content="Add a new job">
                 <Link href="/jobs/new">
                   <div className="flex select-none items-center justify-center gap-2 rounded border border-transparent p-2 transition duration-200 hover:cursor-pointer hover:border-blue-500 hover:text-blue-500">
-                    <p>Add</p>
                     <PlusIcon className="h-6 w-6" />
                   </div>
                 </Link>
               </TooltipComponent>
-              <TooltipComponent side="bottom" content="Delete instructions">
+              <TooltipComponent side="bottom" content="Add a new Binder">
+                <Link href="/job-groups/new">
+                  <div className="flex select-none items-center justify-center gap-2 rounded border border-transparent p-2 transition duration-200 hover:cursor-pointer hover:border-blue-500 hover:text-blue-500">
+                    <FolderPlusIcon className="h-6 w-6" />
+                  </div>
+                </Link>
+              </TooltipComponent>
+              <TooltipComponent side="bottom" content="Delete">
                 <button
                   onClick={() => {
                     if (!canDelete) {
                       ToggleCanDelete();
                     } else {
-                      deleteJobs(jobsToDelete);
+                      deleteItems();
                       setCanDelete(false);
                     }
                   }}
@@ -123,7 +153,6 @@ const Dashboard: NextPage = () => {
                         : "hover:border-blue-500 hover:text-blue-500"
                     }`}
                   >
-                    <p>Delete</p>
                     <TrashIcon className="h-6 w-6" />
                   </div>
                 </button>
@@ -143,7 +172,9 @@ const Dashboard: NextPage = () => {
           <div
             ref={animationParent}
             className={`w-full ${
-              !loading && !errorLoading ? "grid grid-flow-row lg:grid-cols-2 2xl:grid-cols-3" : ""
+              !loading && !errorLoading
+                ? "grid grid-flow-row lg:grid-cols-2 2xl:grid-cols-3"
+                : ""
             } gap-2 lg:grid-cols-2 2xl:grid-cols-3`}
           >
             {loading && !errorLoading && (
@@ -174,10 +205,91 @@ const Dashboard: NextPage = () => {
                 ))}
               </>
             )}
+            {!jobGroupSearchApi.isLoading &&
+              !jobGroupSearchApi.isError &&
+              jobGroupSearchApi.data.length > 0 && (
+                <>
+                  {jobGroupSearchApi.data.map((jobGroup) => (
+                    <BinderComponent
+                      jobGroup={jobGroup}
+                      canDelete={canDelete}
+                      key={jobGroup.id}
+                      addToDelete={addBinderToDelete}
+                      removeFromDelete={removeBinderToDelete}
+                      isDeleting={jobGroupDeleteApi.isLoading}
+                    />
+                  ))}
+                </>
+              )}
           </div>
         </div>
       </main>
     </>
+  );
+};
+
+const BinderComponent: React.FC<{
+  jobGroup: JobGroup;
+  canDelete: boolean;
+  addToDelete: (id: string) => void;
+  removeFromDelete: (id: string) => void;
+  isDeleting: boolean;
+}> = ({ jobGroup, canDelete, addToDelete, removeFromDelete, isDeleting }) => {
+  const [markedForDeletion, setMarkedForDeletion] = useState<boolean>(false);
+  const toggleMarkedForDeletion = () => {
+    setMarkedForDeletion(!markedForDeletion);
+
+    if (markedForDeletion) {
+      removeFromDelete(jobGroup.id);
+      return;
+    }
+
+    addToDelete(jobGroup.id);
+  };
+
+  return (
+    <Link
+      href={`/job-groups/${jobGroup.id}`}
+      className="relative rounded-lg border border-transparent bg-neutral-900 p-3 hover:border-blue-900"
+      key={jobGroup.id}
+    >
+      {isDeleting && markedForDeletion ? (
+        <div className="flex h-full w-full items-center justify-center">
+          <Loading />
+        </div>
+      ) : (
+        <div className="relative block h-full w-full">
+          <div className="flex items-center gap-2">
+            <FolderIcon className="w-10" />
+            <div>
+              <p className="text-2xl font-semibold leading-none">
+                {jobGroup.name}
+              </p>
+              <p className="text-sm leading-none text-neutral-400">
+                {dayjs(jobGroup.updatedAt).fromNow()}{" "}
+              </p>
+            </div>
+          </div>
+          <div className="pt-2">
+            <p className="text-sm text-neutral-400">{jobGroup.description}</p>
+          </div>
+          {canDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                toggleMarkedForDeletion();
+              }}
+              className={`absolute right-0 top-0  ${
+                markedForDeletion ? "text-red-500" : "text-zinc-500"
+              }`}
+            >
+              <TrashIcon className="h-6" />
+            </button>
+          )}
+        </div>
+      )}
+    </Link>
   );
 };
 

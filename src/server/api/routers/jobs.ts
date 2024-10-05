@@ -143,6 +143,7 @@ export const jobsRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      
       const jobResult = await ctx.prisma.job.update({
         where: {
           id: input.id,
@@ -180,9 +181,18 @@ export const jobsRouter = createTRPCRouter({
       })
     )
     .query(async ({ ctx, input }) => {
+      const authorId = ctx.currentUser;
+
       const job = await ctx.prisma.job.findFirst({
         where: {
-          id: input.id,
+          AND: [
+            {
+              id: input.id,
+            },
+            {
+              authorId,
+            },
+          ],
         },
         include: {
           customFunctions: true,

@@ -6,6 +6,7 @@ import { variablesRouter } from "./routers/variables";
 import { instructionSetSchemaVersionRouter } from "./routers/instructionSetSchemaVersion";
 import { VariableTypes as variableTypes } from "./routers/customVariableType";
 import { utilRouter } from "./routers/handleData";
+import { jobGroupsRouter } from "./routers/jobGroups";
 
 /**
  * This is the primary router for your server.
@@ -20,6 +21,7 @@ export const appRouter = createTRPCRouter({
   schemaVersioning: instructionSetSchemaVersionRouter,
   variableTypes: variableTypes,
   pullData: utilRouter,
+  jobGroups: jobGroupsRouter,
 });
 
 // export type definition of API
